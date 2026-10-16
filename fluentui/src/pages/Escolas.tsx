@@ -174,7 +174,7 @@ export default function Escolas() {
     if (t === 'pública' || t === 'municipal') return 'informative';
     if (t === 'estadual') return 'success';
     if (t === 'técnica') return 'warning';
-    return 'neutral';
+    return 'subtle';
   };
 
   const columns = [

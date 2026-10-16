@@ -66,6 +66,14 @@ export interface AvaliacaoAluno {
   curso?: Curso;
 }
 
+export interface AvaliacaoCurso {
+  id: number;
+  nota: number;
+  observacao?: string;
+  dataAvaliacao?: string;
+  curso?: Curso;
+}
+
 export interface AvaliacaoQualidade {
   id: number;
   nota: number;

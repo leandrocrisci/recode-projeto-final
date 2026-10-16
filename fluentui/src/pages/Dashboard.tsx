@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { APIProvider, Map, Marker, InfoWindow, Circle } from '@vis.gl/react-google-maps';
 import { Spinner, Text, Badge, makeStyles, tokens, Button } from '@fluentui/react-components';
 import { Building24Regular, VehicleBus24Regular, MyLocation24Regular, Star24Regular, Clock24Regular, People24Regular } from '@fluentui/react-icons';
@@ -217,7 +217,7 @@ export default function Dashboard() {
                 <Text style={{ fontSize: '18px', fontWeight: '700', display: 'block', lineHeight: '24px', color: tokens.colorNeutralForeground1 }}>
                   {escolaSelecionada.nome}
                 </Text>
-                <Text style={{ fontSize: '12px', italic: true, display: 'block', marginTop: '4px', color: tokens.colorNeutralForeground3 }}>
+                <Text style={{ fontSize: '12px', fontStyle: 'italic', display: 'block', marginTop: '4px', color: tokens.colorNeutralForeground3 }}>
                   {escolaSelecionada.enderecoFormatado}
                 </Text>
               </div>

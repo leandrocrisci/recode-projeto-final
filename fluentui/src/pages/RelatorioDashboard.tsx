@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
-  makeStyles, tokens, Text, Button, Input, Field, Select,
+  makeStyles, tokens, Text, Button, Input, Select,
   DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
   TableCellLayout, createTableColumn, Spinner, MessageBar, MessageBarBody,
   Badge, Title2, Card, CardHeader, Tooltip     
 } from '@fluentui/react-components';
 import {
-  Search24Regular, Building24Regular, VehicleBus24Regular, 
-  MyLocation24Regular, People24Regular, Clock24Regular
+  Search24Regular, Building24Regular, VehicleBus24Regular,
+  MyLocation24Regular, People24Regular
 } from '@fluentui/react-icons';
 import axios from 'axios';
 
@@ -126,7 +126,7 @@ export default function RelatorioDashboard() {
     createTableColumn<EscolaAgregada>({
       columnId: 'nome',
       renderHeaderCell: () => 'Instituição de Ensino',
-      renderCell: e => <TableCellLayout weight="semibold">{e.nome}</TableCellLayout>
+      renderCell: e => <TableCellLayout><Text weight="semibold">{e.nome}</Text></TableCellLayout>
     }),
     createTableColumn<EscolaAgregada>({
       columnId: 'tipo',

@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   makeStyles, tokens, Text, Button, Input, Field, Textarea, Select,
-  DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
+  DataGrid, DataGridHeader, DataGridBody, DataGridRow, DataGridCell,
   TableCellLayout, createTableColumn, Spinner, MessageBar, MessageBarBody,
-  Card, CardHeader, CardPreview, CardFooter, Badge, Title2, Subtitle2, Tooltip
+  Card, CardHeader, CardPreview, CardFooter,   Badge, Title2, Subtitle2
 } from '@fluentui/react-components';
 import {
   Add24Regular, Edit24Regular, Delete24Regular, Box24Regular, Grid24Regular, 
-  Table24Regular, Cart24Regular, Search24Regular, ArrowUpload24Regular,
+  Table24Regular, Cart24Regular, Search24Regular,
   DocumentText24Regular, Pen24Regular, Eraser24Regular, Wrench24Regular, 
   Ruler24Regular, Cut24Regular, Backpack24Regular, Folder24Regular, Calculator24Regular
 } from '@fluentui/react-icons';
@@ -85,7 +85,7 @@ export default function Produtos() {
 
     try {
       // Altere a linha 77 do seu arquivo para:
-        const urlCompleta = `https://google.com{sheetId}/export?format=csv`;
+        const urlCompleta = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
       
       // CORREÇÃO: Adicionado opções de CORS e omissão de credenciais
       const res = await fetch(urlCompleta, {

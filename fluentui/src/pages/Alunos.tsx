@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  makeStyles, tokens, Text, Button, Input, Field, Select,
+  makeStyles, tokens, Button, Input, Field, Select,
   DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
   TableCellLayout, createTableColumn, Spinner, MessageBar, MessageBarBody,
   Tooltip, Title2, Badge
 } from '@fluentui/react-components';
-import { Add24Regular, Edit24Regular, Delete24Regular, People24Regular, Location24Regular, VehicleBus24Regular } from '@fluentui/react-icons';
+import { Add24Regular, Edit24Regular, Delete24Regular, Location24Regular, VehicleBus24Regular } from '@fluentui/react-icons';
 
 import {
   getAlunos, getEscolas, getCursos, createAluno, updateAluno, deleteAluno  
