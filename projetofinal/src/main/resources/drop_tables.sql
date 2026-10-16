@@ -1,0 +1,9 @@
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS avaliacoesalunos;
+DROP TABLE IF EXISTS avaliacoesqualidade;
+DROP TABLE IF EXISTS avaliacoesqualidades;
+DROP TABLE IF EXISTS alunos;
+DROP TABLE IF EXISTS cursos;
+DROP TABLE IF EXISTS enderecosescolas;
+DROP TABLE IF EXISTS escolas;
+SET FOREIGN_KEY_CHECKS = 1;

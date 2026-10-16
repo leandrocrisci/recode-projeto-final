@@ -1,0 +1,169 @@
+# 📚 Portal de Suprimentos ODS 4 - Documentação do Sistema
+
+Este documento reúne a especificação técnica do mini sistema de vendas de cursos e gerenciamento de suprimentos escolares B2B, focado no **Objetivo de Desenvolvimento Sustentável 4 (Educação de Qualidade)**. O ecossistema visual utiliza o **Microsoft Fluent UI React (v9)** e o banco de dados **MySQL**.
+
+---
+
+## 🗄️ 1. Modelagem do Banco de Dados (MySQL)
+
+Seguindo os padrões estritos de arquitetura estabelecidos para o projeto, todos os identificadores utilizam o tipo `INT`, chaves estrangeiras explicitamente declaradas (`CONSTRAINT`) e nomenclatura padronizada em caixa baixa **sem caracteres de sublinhado (`_`)**.
+
+### 1.1. Script de Criação das Novas Tabelas e Relacionamentos
+
+```sql
+-- ======================================================
+-- TABELA: professores (Antigo modelo de Vendedores)
+-- ======================================================
+DROP TABLE IF EXISTS professores;
+CREATE TABLE professores (
+  id int NOT NULL AUTO_INCREMENT,
+  nome varchar(255) NOT NULL,
+  email varchar(255) DEFAULT NULL,
+  telefone varchar(255) DEFAULT NULL,
+  especialidade varchar(255) DEFAULT NULL,
+  biografia varchar(1000) DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ======================================================
+-- TABELA: matriculas (Venda de Cursos / Inscrições)
+-- ======================================================
+DROP TABLE IF EXISTS matriculas;
+CREATE TABLE matriculas (
+  id int NOT NULL AUTO_INCREMENT,
+  alunoid int NOT NULL,
+  cursoid int NOT NULL,
+  datamatricula datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  valorpago decimal(10,2) NOT NULL,
+  statuspagamento enum('pago', 'pendente', 'cancelado') NOT NULL DEFAULT 'pendente',
+  PRIMARY KEY (id),
+  KEY FKmatriculaalunoid (alunoid),
+  KEY FKmatriculacursoid (cursoid),
+  CONSTRAINT FKmatriculaalunoid FOREIGN KEY (alunoid) REFERENCES alunos (id),
+  CONSTRAINT FKmatriculacursoid FOREIGN KEY (cursoid) REFERENCES cursos (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ======================================================
+-- TABELA: progressosalunos (Métricas de Impacto ODS 4)
+-- ======================================================
+DROP TABLE IF EXISTS progressosalunos;
+CREATE TABLE progressosalunos (
+  id int NOT NULL AUTO_INCREMENT,
+  alunoid int NOT NULL,
+  cursoid int NOT NULL,
+  percentualconclusao int NOT NULL DEFAULT 0,
+  dataatualizacao datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY FKprogressoalunoid (alunoid),
+  KEY FKprogressocursoid (cursoid),
+  CONSTRAINT FKprogressoalunoid FOREIGN KEY (alunoid) REFERENCES alunos (id),
+  CONSTRAINT FKprogressocursoid FOREIGN KEY (cursoid) REFERENCES cursos (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ======================================================
+-- TABELA: produtos (Catálogo de Materiais e Infraestrutura)
+-- ======================================================
+DROP TABLE IF EXISTS produtos;
+CREATE TABLE produtos (
+  id int NOT NULL AUTO_INCREMENT,
+  nome varchar(255) NOT NULL,
+  descricao varchar(1000) DEFAULT NULL,
+  preco decimal(10,2) NOT NULL DEFAULT 0.00,
+  quantidadeestoque int NOT NULL DEFAULT 0,
+  categoria enum('material_didatico', 'uniforme', 'mobiliario', 'tecnologia') NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ======================================================
+-- TABELA: pedidos (Venda de Materiais para Escolas)
+-- ======================================================
+DROP TABLE IF EXISTS pedidos;
+CREATE TABLE pedidos (
+  id int NOT NULL AUTO_INCREMENT,
+  escolaid int NOT NULL,
+  produtoid int NOT NULL,
+  quantidade int NOT NULL,
+  valorunitario decimal(10,2) NOT NULL,
+  valortotal decimal(10,2) GENERATED ALWAYS AS (quantidade * valorunitario) STORED,
+  datapedido datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  statuspedido enum('processando', 'enviado', 'entregue', 'cancelado') NOT NULL DEFAULT 'processando',
+  PRIMARY KEY (id),
+  KEY FKpedidoscolaid (escolaid),
+  KEY FKpedidoprodutoid (produtoid),
+  CONSTRAINT FKpedidoscolaid FOREIGN KEY (escolaid) REFERENCES escolas (id),
+  CONSTRAINT FKpedidoprodutoid FOREIGN KEY (produtoid) REFERENCES produtos (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+### 1.2. Atualizações em Tabelas Existentes
+Para integrar o ecossistema educacional às tabelas base originais, a tabela de `cursos` deve receber a chave estrangeira do corpo docente e as métricas sociais:
+
+```sql
+ALTER TABLE cursos 
+  ADD COLUMN professorid int DEFAULT NULL,
+  ADD COLUMN preco decimal(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN nivelensino enum('basico', 'tecnico', 'superior', 'capacitacao') NOT NULL DEFAULT 'capacitacao',
+  ADD COLUMN gratuito boolean NOT NULL DEFAULT FALSE,
+  ADD KEY FKprofessorid (professorid),
+  ADD CONSTRAINT FKprofessorid FOREIGN KEY (professorid) REFERENCES professores (id);
+```
+
+---
+
+## 💻 2. Interface Frontend (Fluent UI v9 converged)
+
+A aplicação React implementa o conceito de **View Toggle** (Alternador de Visualização). Uma única barra de filtros gerencia simultaneamente duas experiências distintas de usuário:
+
+* **Modo Vitrine (`Cards`)**: Interface comercial focada na experiência de aquisição de materiais pelas escolas compradoras.
+* **Modo Estoque (`DataGrid`)**: Interface analítica e densa no estilo ERP corporativo para o gerenciamento de inventário e controle interno do almoxarifado.
+
+---
+
+## 🛠️ 3. Guia de Resolução de Problemas (Troubleshooting)
+
+Ao integrar ecossistemas densos como o da Microsoft com ferramentas de build rápido (Vite), erros de escopo e árvore de dependências podem ocorrer. Abaixo estão documentados os problemas mais comuns e suas correções.
+
+### 3.1. Tela Preta / Falha Crítica de Layout no Vite
+**Sintoma:** O navegador renderiza uma tela escura, ocultando completamente os componentes da Microsoft.
+* **Causa:** O Vite cria arquivos globais de estilo (`index.css` e `App.css`) que injetam media-queries (`@media (prefers-color-scheme: dark)`) e estilizações de centralização. Isso cria um conflito agressivo com o CSS dinâmico injetado pelas variáveis e tokens do `FluentProvider`.
+* **Solução:** Esvazie por completo os arquivos `src/index.css` e `src/App.css` do seu projeto, deixando-os totalmente em branco, permitindo que os tokens globais da Microsoft assumam o controle do documento.
+
+### 3.2. Erro: "Invalid Hook Call" & Quebra de Contexto (`useContext`)
+**Sintoma:** Console exibe mensagens de erro impedindo a renderização do `<FluentProvider>`, alegando que os Hooks só podem ser chamados no corpo de componentes funcionais.
+* **Causa 1 (Sintaxe):** Execução de lógicas mutáveis ou declarações de objetos dinâmicos inseridas inline de maneira órfã, fora do escopo ou do ciclo de vida reativo do React.
+* **Causa 2 (Módulos Duplicados):** Multiplicidade de instâncias do núcleo do React carregadas simultaneamente em memória (vazamento no diretório `node_modules`), geralmente causado por arquivos de travas engessados (`lockfiles`).
+
+#### 🧼 Procedimento de Limpeza Absoluta e Reinstalação
+
+Caso o erro persista devido ao cache do ecossistema, execute o reset do ambiente de acordo com o seu sistema operacional:
+
+#### No Windows (PowerShell)
+```powershell
+# 1. Remova de forma forçada a pasta de dependências e a trava antiga
+Remove-Item -Recycle -Force -Recurse .\node_modules
+Remove-Item -Recycle -Force .\package-lock.json
+
+# 2. Limpe o armazenamento temporário do gerenciador
+npm cache clean --force
+
+# 3. Realize a reinstalação unificada e alinhada dos pacotes
+npm install react react-dom @fluentui/react-components @fluentui/react-icons
+
+# 4. Inicie o servidor limpando o cache interno de otimização do bundler
+npm run dev -- --force
+```
+
+#### No Linux / macOS (Bash)
+```bash
+# 1. Exclusão recursiva de pastas e travas
+rm -rf node_modules package-lock.json
+
+# 2. Limpeza do cache local do npm
+npm cache clean --force
+
+# 3. Instalação sincronizada
+npm install react react-dom @fluentui/react-components @fluentui/react-icons
+
+# 4. Execução forçada do compilador
+npm run dev -- --force
+```
