@@ -14,7 +14,7 @@ export function registerLogger(fn: AddLogFn) {
 // ── Instância Axios ──────────────────────────────────────────────────────────
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8090/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
