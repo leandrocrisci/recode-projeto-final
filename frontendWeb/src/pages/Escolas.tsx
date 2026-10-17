@@ -17,6 +17,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -156,6 +157,48 @@ export default function Escolas() {
     }
   };
 
+  const importEscola = async (row: GoogleSheetRow) => {
+    const nome = sheetValue(row, 'nome');
+    const tipo = sheetValue(row, 'tipo');
+    if (!nome || !tipo) throw new Error('Nome e tipo da escola são obrigatórios.');
+    if (!['Pública', 'Estadual', 'Municipal', 'Técnica', 'Privada', 'Federal'].includes(tipo)) {
+      throw new Error(`Tipo de escola inválido: "${tipo}".`);
+    }
+    const addressFields = ['logradouro', 'cidade', 'estado'];
+    const hasAddress = ['logradouro', 'numero', 'bairro', 'cidade', 'estado', 'cep']
+      .some(field => sheetValue(row, field));
+    if (hasAddress) {
+      const missing = addressFields.filter(field => !sheetValue(row, field));
+      if (missing.length) {
+        throw new Error(`Endereço incompleto; informe ${missing.join(', ')}.`);
+      }
+      if (sheetValue(row, 'estado').length !== 2) throw new Error('Estado do endereço deve ser a sigla de 2 letras.');
+    }
+    const created = await createEscola({
+      nome,
+      tipo,
+      telefone: sheetValue(row, 'telefone') || null,
+      email: sheetValue(row, 'email') || null,
+    });
+    if (hasAddress) {
+      try {
+        await createEndereco(created.data.id, {
+          escola: { id: created.data.id },
+          logradouro: sheetValue(row, 'logradouro'),
+          numero: sheetValue(row, 'numero') || null,
+          bairro: sheetValue(row, 'bairro') || null,
+          cidade: sheetValue(row, 'cidade'),
+          estado: sheetValue(row, 'estado').toUpperCase(),
+          cep: sheetValue(row, 'cep') || null,
+        });
+      } catch (cause) {
+        load();
+        const reason = cause instanceof Error ? cause.message : 'a API rejeitou o endereço.';
+        throw new Error(`A escola "${nome}" foi criada, mas seu endereço não foi: ${reason}`);
+      }
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Deseja remover permanentemente esta unidade de ensino?')) return;
     try { 
@@ -227,9 +270,17 @@ export default function Escolas() {
         title="🏫 Gestão de Unidades Escolares"
         subtitle={`${escolas.length} escola${escolas.length !== 1 ? 's' : ''} integrada${escolas.length !== 1 ? 's' : ''} ao censo`}
         actions={isAdmin && (
-          <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>
-            Nova Escola
-          </Button>
+          <>
+            <GoogleSheetsImporter
+              title="escolas"
+              requiredColumns={['nome', 'tipo']}
+              onImportRow={importEscola}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>
+              Nova Escola
+            </Button>
+          </>
         )}
       />
 

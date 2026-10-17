@@ -16,6 +16,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page:       { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -82,6 +83,19 @@ export default function Professores() {
     finally { setSaving(false); }
   };
 
+  const importProfessor = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const nome = sheetValue(row, 'nome');
+    if (!nome) throw new Error('Nome do professor é obrigatório.');
+    await createProfessor(escola.id, {
+      nome,
+      email: sheetValue(row, 'email') || null,
+      telefone: sheetValue(row, 'telefone') || null,
+      especialidade: sheetValue(row, 'especialidade') || null,
+      biografia: sheetValue(row, 'biografia') || null,
+    });
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Excluir este professor?')) return;
     try { await deleteProfessor(id); load(); }
@@ -116,7 +130,17 @@ export default function Professores() {
       <PageHeader
         title="👨‍🏫 Professores"
         subtitle={`${professores.length} professor${professores.length !== 1 ? 'es' : ''} cadastrado${professores.length !== 1 ? 's' : ''}`}
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Professor</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="professores"
+              requiredColumns={['nome', 'escola']}
+              onImportRow={importProfessor}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Professor</Button>
+          </>
+        )}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}

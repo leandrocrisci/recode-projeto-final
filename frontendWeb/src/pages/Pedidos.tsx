@@ -17,6 +17,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 // ── Estilos ───────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,27 @@ export default function Pedidos() {
     finally { setSaving(false); }
   };
 
+  const importPedido = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const produto = findSheetEntity(produtos, sheetValue(row, 'produto'), 'Produto');
+    const professor = findSheetEntity(professores, sheetValue(row, 'professor'), 'Professor');
+    if (professor.escola?.id && professor.escola.id !== escola.id) {
+      throw new Error(`O professor "${professor.nome}" não pertence à escola "${escola.nome}".`);
+    }
+    const quantidade = sheetNumber(sheetValue(row, 'quantidade'), 'quantidade');
+    const valorUnitarioText = sheetValue(row, 'valorUnitario');
+    const valorUnitario = valorUnitarioText
+      ? sheetNumber(valorUnitarioText, 'valorUnitario')
+      : produto.preco;
+    const statusPedido = (sheetValue(row, 'statusPedido') || 'processando').toLowerCase();
+    if (!Number.isInteger(quantidade) || quantidade < 1) throw new Error('Quantidade deve ser um inteiro maior que zero.');
+    if (valorUnitario < 0) throw new Error('Valor unitário não pode ser negativo.');
+    if (!['processando', 'enviado', 'entregue', 'cancelado'].includes(statusPedido)) {
+      throw new Error('statusPedido deve ser processando, enviado, entregue ou cancelado.');
+    }
+    await createPedido(escola.id, produto.id, professor.id, { quantidade, valorUnitario, statusPedido });
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Cancelar/excluir este pedido?')) return;
     setError('');
@@ -232,7 +254,19 @@ export default function Pedidos() {
       <PageHeader
         title="🛒 Pedidos"
         subtitle={`${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''} no sistema`}
-        actions={<Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Pedido</Button>}
+        actions={(
+          <>
+            {isAdmin && (
+              <GoogleSheetsImporter
+                title="pedidos"
+                requiredColumns={['escola', 'produto', 'professor', 'quantidade']}
+                onImportRow={importPedido}
+                onComplete={load}
+              />
+            )}
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Pedido</Button>
+          </>
+        )}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}

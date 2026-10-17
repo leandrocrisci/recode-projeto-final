@@ -12,6 +12,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -61,6 +62,24 @@ export default function Enderecos() {
     finally { setSaving(false); }
   };
 
+  const importEndereco = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const estado = sheetValue(row, 'estado').toUpperCase();
+    if (estado.length !== 2) throw new Error('Estado deve conter a sigla de 2 letras.');
+    const logradouro = sheetValue(row, 'logradouro');
+    const cidade = sheetValue(row, 'cidade');
+    if (!logradouro || !cidade) throw new Error('Logradouro e cidade são obrigatórios.');
+    await createEndereco(escola.id, {
+      escola: { id: escola.id },
+      cep: sheetValue(row, 'cep') || null,
+      logradouro,
+      numero: sheetValue(row, 'numero') || null,
+      bairro: sheetValue(row, 'bairro') || null,
+      cidade,
+      estado,
+    });
+  };
+
   const columns = [
     // createTableColumn<EnderecoEscola>({ columnId: 'id',        renderHeaderCell: () => '#',          renderCell: i => <TableCellLayout>{i.id}</TableCellLayout> }),
     createTableColumn<EnderecoEscola>({ columnId: 'escola',    renderHeaderCell: () => 'Escola',      renderCell: i => <TableCellLayout>{i.escola?.nome ?? '—'}</TableCellLayout> }),
@@ -86,7 +105,17 @@ export default function Enderecos() {
     <div className={s.page}>
       <PageHeader
         title="📍 Endereços das Escolas"
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Endereço</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="endereços"
+              requiredColumns={['escola', 'logradouro', 'cidade', 'estado']}
+              onImportRow={importEndereco}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Endereço</Button>
+          </>
+        )}
       />
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (

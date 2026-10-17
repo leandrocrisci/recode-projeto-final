@@ -12,6 +12,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -104,6 +105,23 @@ export default function Cursos() {
     }
   };
 
+  const importCurso = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const nome = sheetValue(row, 'nome');
+    if (!nome) throw new Error('Nome do curso é obrigatório.');
+    const carga = sheetValue(row, 'cargaHoraria');
+    const cargaHoraria = carga ? sheetNumber(carga, 'cargaHoraria') : null;
+    if (cargaHoraria !== null && (!Number.isInteger(cargaHoraria) || cargaHoraria < 1)) {
+      throw new Error('Carga horária deve ser um número inteiro positivo.');
+    }
+    await createCurso(escola.id, {
+      nome,
+      descricao: sheetValue(row, 'descricao') || null,
+      cargaHoraria,
+      escola: { id: escola.id },
+    });
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Deseja excluir permanentemente este curso da grade?')) return;
     try { 
@@ -161,7 +179,17 @@ export default function Cursos() {
       <PageHeader
         title="📚 Cursos"
         subtitle={`${cursos.length} curso${cursos.length !== 1 ? 's' : ''} ativo${cursos.length !== 1 ? 's' : ''}`}
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Curso</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="cursos"
+              requiredColumns={['nome', 'escola']}
+              onImportRow={importCurso}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Curso</Button>
+          </>
+        )}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}

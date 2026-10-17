@@ -16,6 +16,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -119,6 +120,33 @@ export default function Alunos() {
     }
   };
 
+  const importAluno = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const curso = findSheetEntity(cursos, sheetValue(row, 'curso'), 'Curso');
+    if (curso.escola?.id !== escola.id) {
+      throw new Error(`O curso "${curso.nome}" não pertence à escola "${escola.nome}".`);
+    }
+    const area = sheetValue(row, 'area').toLowerCase();
+    if (!['urbana', 'rural'].includes(area)) throw new Error('Área deve ser "urbana" ou "rural".');
+    const transporte = sheetValue(row, 'tipoTransporte').toLowerCase();
+    if (!['a_pe', 'transporte_escolar', 'transporte_publico', 'proprio'].includes(transporte)) {
+      throw new Error('tipoTransporte deve ser a_pe, transporte_escolar, transporte_publico ou proprio.');
+    }
+    const distancia = sheetNumber(sheetValue(row, 'distanciaEscola'), 'distanciaEscola');
+    const minutos = sheetNumber(sheetValue(row, 'tempoDeslocamentoMinutos'), 'tempoDeslocamentoMinutos');
+    if (distancia < 0 || !Number.isInteger(minutos) || minutos < 0) {
+      throw new Error('Distância e tempo devem ser positivos; o tempo deve ser inteiro.');
+    }
+    await createAluno({
+      area,
+      distanciaEscola: distancia,
+      tipoTransporte: transporte,
+      tempoDeslocamentoMinutos: minutos,
+      escola: { id: escola.id },
+      curso: { id: curso.id },
+    });
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Deseja excluir permanentemente este aluno do censo?')) return;
     try { 
@@ -201,7 +229,17 @@ export default function Alunos() {
     <div className={s.page}>
       <PageHeader
         title="🎓 Alunos"
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Aluno</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="alunos"
+              requiredColumns={['escola', 'curso', 'area', 'distanciaEscola', 'tipoTransporte', 'tempoDeslocamentoMinutos']}
+              onImportRow={importAluno}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Aluno</Button>
+          </>
+        )}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}

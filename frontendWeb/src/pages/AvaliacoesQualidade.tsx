@@ -12,6 +12,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -81,6 +82,19 @@ const handleSubmit = async (ev: React.FormEvent) => {
   }
 };
 
+  const importAvaliacao = async (row: GoogleSheetRow) => {
+    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const nota = sheetNumber(sheetValue(row, 'nota'), 'nota');
+    if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
+      throw new Error('A nota de qualidade deve ser um inteiro entre 1 e 5.');
+    }
+    await createAvaliacaoQualidade(escola.id, {
+      nota,
+      comentario: sheetValue(row, 'comentario') || null,
+      dataAvaliacao: sheetValue(row, 'dataAvaliacao') || null,
+    });
+  };
+
 
 
   const handleDelete = async (id: number) => {
@@ -120,7 +134,17 @@ const handleSubmit = async (ev: React.FormEvent) => {
     <div className={s.page}>
       <PageHeader
         title="⭐ Avaliações de Qualidade"
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="avaliações de qualidade"
+              requiredColumns={['escola', 'nota']}
+              onImportRow={importAvaliacao}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>
+          </>
+        )}
       />
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (

@@ -12,6 +12,7 @@ import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -80,6 +81,17 @@ export default function AvaliacoesCursos() {
     }
   };
 
+  const importAvaliacao = async (row: GoogleSheetRow) => {
+    const curso = findSheetEntity(cursos, sheetValue(row, 'curso'), 'Curso');
+    const nota = sheetNumber(sheetValue(row, 'nota'), 'nota');
+    if (nota < 0 || nota > 10) throw new Error('A nota deve estar entre 0 e 10.');
+    await createAvaliacaoCurso(curso.id, {
+      nota,
+      observacao: sheetValue(row, 'observacao') || null,
+      dataAvaliacao: sheetValue(row, 'dataAvaliacao') || null,
+    });
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('Deseja realmente excluir esta avaliação?')) return;
     setError('');
@@ -121,7 +133,17 @@ export default function AvaliacoesCursos() {
     <div className={s.page}>
       <PageHeader
         title="📚 Avaliações de Cursos"
-        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>}
+        actions={isAdmin && (
+          <>
+            <GoogleSheetsImporter
+              title="avaliações de cursos"
+              requiredColumns={['curso', 'nota']}
+              onImportRow={importAvaliacao}
+              onComplete={load}
+            />
+            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>
+          </>
+        )}
       />
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
