@@ -9,8 +9,6 @@ import recode.leandrocrisci.projetofinal.service.EnderecoEscolaService;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5174")
-
 @RestController
 @RequestMapping("/api/enderecos-escolas")
 public class EnderecoEscolaController {

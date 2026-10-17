@@ -3,8 +3,11 @@ package recode.leandrocrisci.projetofinal;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Arrays;
 
 @SpringBootApplication
 public class ProjetofinalApplication {
@@ -13,14 +16,20 @@ public class ProjetofinalApplication {
 		SpringApplication.run(ProjetofinalApplication.class, args);
 	}
 
-	// 🌟 Configuração Global do CORS adicionada aqui
 	@Bean
-	public WebMvcConfigurer corsConfigurer() {
+	public WebMvcConfigurer corsConfigurer(
+			@Value("${app.cors.allowed-origins:http://localhost:5174,https://frontendweb-rcs5.onrender.com}") String allowedOrigins) {
+		String[] origins = Arrays.stream(allowedOrigins.split(","))
+				.map(String::trim)
+				.map(origin -> origin.replaceAll("/+$", ""))
+				.filter(origin -> !origin.isEmpty())
+				.toArray(String[]::new);
+
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/**") // Libera todas as rotas do sistema
-						.allowedOrigins("http://localhost:5174") // URL do seu Frontend React
+				registry.addMapping("/api/**")
+						.allowedOrigins(origins)
 						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
 						.allowedHeaders("*")
 						.allowCredentials(true);

@@ -9,8 +9,6 @@ import recode.leandrocrisci.projetofinal.service.EscolaService;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5174")
-
 @RestController
 @RequestMapping("/api/escolas")
 public class EscolaController {

@@ -9,8 +9,6 @@ import recode.leandrocrisci.projetofinal.service.AlunoService;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5174")
-
 @RestController
 @RequestMapping("/api/alunos")
 public class AlunoController {
