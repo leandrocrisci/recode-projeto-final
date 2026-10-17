@@ -16,6 +16,8 @@ export type GoogleSheetRow = Record<string, string>;
 interface GoogleSheetsImporterProps {
   title: string;
   requiredColumns: string[];
+  onBeforeImport?: () => Promise<void>;
+  validateRows?: (rows: GoogleSheetRow[]) => void;
   onImportRow: (row: GoogleSheetRow) => Promise<void>;
   onComplete: () => void;
 }
@@ -132,12 +134,15 @@ const readGoogleSheet = async (sheetUrl: string, requiredColumns: string[]) => {
 export function GoogleSheetsImporter({
   title,
   requiredColumns,
+  onBeforeImport,
+  validateRows,
   onImportRow,
   onComplete,
 }: GoogleSheetsImporterProps) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [rows, setRows] = useState<GoogleSheetRow[]>([]);
+  const [nextRowIndex, setNextRowIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -151,6 +156,7 @@ export function GoogleSheetsImporter({
     setError('');
     setSuccess('');
     setRows([]);
+    setNextRowIndex(0);
     setLoading(true);
     try {
       const sheetRows = await readGoogleSheet(url, requiredColumns);
@@ -169,18 +175,23 @@ export function GoogleSheetsImporter({
     setLoading(true);
     let imported = 0;
     try {
-      for (const row of rows) {
+      await onBeforeImport?.();
+      validateRows?.(rows);
+      for (let index = nextRowIndex; index < rows.length; index++) {
+        const row = rows[index];
         const rowNumber = Number((row as GoogleSheetRow & { __rowNumber?: number }).__rowNumber);
         try {
           await onImportRow(row);
         } catch (cause) {
           const reason = cause instanceof Error ? cause.message : 'A API rejeitou o registro.';
-          throw new Error(`Falha na linha ${rowNumber || imported + 2} depois de ${imported} de ${rows.length} registro(s): ${reason}`);
+          throw new Error(`Falha na linha ${rowNumber || index + 2} depois de ${nextRowIndex + imported} de ${rows.length} registro(s): ${reason}`, { cause });
         }
         imported++;
+        setNextRowIndex(index + 1);
       }
-      setSuccess(`${imported} registro(s) importado(s).`);
+      setSuccess(`${rows.length} registro(s) importado(s).`);
       setRows([]);
+      setNextRowIndex(0);
       setUrl('');
       onComplete();
     } catch (cause) {
@@ -201,6 +212,7 @@ export function GoogleSheetsImporter({
           setError('');
           setSuccess('');
           setRows([]);
+          setNextRowIndex(0);
           setUrl('');
           setOpen(true);
         }}
@@ -221,6 +233,7 @@ export function GoogleSheetsImporter({
               onChange={event => {
                 setUrl(event.target.value);
                 setRows([]);
+                setNextRowIndex(0);
                 setSuccess('');
               }}
             />

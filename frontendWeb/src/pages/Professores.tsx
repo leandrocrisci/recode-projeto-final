@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   makeStyles, tokens, Button, Input, Field, Select, Textarea,
   DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
@@ -33,6 +33,7 @@ export default function Professores() {
 
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [escolas,     setEscolas]     = useState<Escola[]>([]);
+  const escolasImportRef = useRef<Escola[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState('');
   const [modal,       setModal]       = useState(false);
@@ -43,11 +44,35 @@ export default function Professores() {
   const load = () => {
     setLoading(true);
     Promise.all([getProfessores(), getEscolas()])
-      .then(([p, e]) => { setProfessores(p.data); setEscolas(e.data); })
+      .then(([p, e]) => {
+        setProfessores(p.data);
+        setEscolas(e.data);
+        escolasImportRef.current = e.data;
+      })
       .catch(() => setError('Erro ao carregar professores.'))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
+
+  const refreshEscolasForImport = async () => {
+    const response = await getEscolas();
+    escolasImportRef.current = response.data;
+    setEscolas(response.data);
+  };
+
+  const validateProfessorRows = (rows: GoogleSheetRow[]) => {
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const rowNumber = Number((row as GoogleSheetRow & { __rowNumber?: number }).__rowNumber) || index + 2;
+      try {
+        findSheetEntity(escolasImportRef.current, sheetValue(row, 'escola'), 'Escola');
+      } catch (cause) {
+        const reason = cause instanceof Error ? cause.message : 'Escola não encontrada.';
+        throw new Error(`Falha na linha ${rowNumber}: ${reason}`, { cause });
+      }
+      if (!sheetValue(row, 'nome')) throw new Error(`Falha na linha ${rowNumber}: nome do professor é obrigatório.`);
+    }
+  };
 
   const openNew = () => {
     setForm(emptyForm); setEditId(null); setError(''); setModal(true);
@@ -84,7 +109,7 @@ export default function Professores() {
   };
 
   const importProfessor = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
+    const escola = findSheetEntity(escolasImportRef.current, sheetValue(row, 'escola'), 'Escola');
     const nome = sheetValue(row, 'nome');
     if (!nome) throw new Error('Nome do professor é obrigatório.');
     await createProfessor(escola.id, {
@@ -135,6 +160,8 @@ export default function Professores() {
             <GoogleSheetsImporter
               title="professores"
               requiredColumns={['nome', 'escola']}
+              onBeforeImport={refreshEscolasForImport}
+              validateRows={validateProfessorRows}
               onImportRow={importProfessor}
               onComplete={load}
             />

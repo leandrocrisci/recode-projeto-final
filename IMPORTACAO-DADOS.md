@@ -19,7 +19,9 @@ aba do Google Sheets para a API.
 Cada confirmação cria novos registros; ela não atualiza registros existentes
 nem impede duplicatas. As linhas são enviadas em sequência. Se uma requisição
 falhar, a interface informa a linha e o número de registros já enviados; esses
-registros não são revertidos.
+registros não são revertidos. Ao tentar novamente sem fechar o importador, o
+processamento continua a partir da linha que falhou, evitando repetir os
+registros concluídos nessa sessão.
 
 ## Ordem recomendada
 
@@ -37,6 +39,8 @@ O nome informado nas colunas de relacionamento deve corresponder a um registro
 já cadastrado. Endereços, Cursos, Professores e Avaliações de Qualidade usam
 Escolas; Alunos usam Escola e Curso; Avaliações de Cursos usam Curso; Pedidos
 usam Escola, Produto e Professor.
+Na importação de Professores, as escolas são recarregadas da API e todos os
+vínculos da planilha são validados antes de criar o primeiro professor.
 
 ## Colunas esperadas
 
