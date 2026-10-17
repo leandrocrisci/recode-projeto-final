@@ -119,3 +119,34 @@ export function agregarEscolas(
     };
   });
 }
+
+// ── KPIs globais (faixa de indicadores do Dashboard) ──────────────────────────
+
+export interface KpisGlobais {
+  totalEscolas: number;
+  escolasNoMapa: number;
+  totalAlunos: number;
+  alunosRurais: number;
+  percentualRural: string;
+  /** Média das notas médias das escolas avaliadas; null se nenhuma foi avaliada. */
+  notaMediaGeral: number | null;
+  escolasAvaliadas: number;
+}
+
+export function calcularKpis(escolas: EscolaAgregada[]): KpisGlobais {
+  const totalAlunos = escolas.reduce((acc, e) => acc + e.estatisticas.totalAlunos, 0);
+  const alunosRurais = escolas.reduce((acc, e) => acc + e.estatisticas.alunosRurais, 0);
+  const notas = escolas
+    .map(e => e.estatisticas.notaMedia)
+    .filter((n): n is number => n !== null);
+
+  return {
+    totalEscolas: escolas.length,
+    escolasNoMapa: escolas.filter(temCoordenadas).length,
+    totalAlunos,
+    alunosRurais,
+    percentualRural: totalAlunos > 0 ? ((alunosRurais / totalAlunos) * 100).toFixed(1) : '0.0',
+    notaMediaGeral: notas.length > 0 ? notas.reduce((acc, n) => acc + n, 0) / notas.length : null,
+    escolasAvaliadas: notas.length,
+  };
+}

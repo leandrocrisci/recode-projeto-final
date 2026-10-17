@@ -7,16 +7,19 @@ import {
 } from '@fluentui/react-components';
 import {
   Search24Regular, Building24Regular, VehicleBus24Regular,
-  MyLocation24Regular, People24Regular, ArrowClockwise24Regular
+  MyLocation24Regular, People24Regular, ArrowClockwise24Regular, DataTrending24Regular
 } from '@fluentui/react-icons';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
+import { KpiCard } from '../components/KpiCard';
+import { corTipoEscola } from '../utils/tipoEscola';
 import { useEscolasAgregadas } from '../hooks/useEscolasAgregadas';
 import type { EscolaAgregada } from '../utils/agregarEscolas';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
-  kpiGrid: { display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%' },
-  kpiCard: { flex: '1 1 220px', padding: '16px', backgroundColor: tokens.colorNeutralBackground1, border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium },
+  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' },
   contentLayout: { display: 'flex', gap: '20px', width: '100%', alignItems: 'flex-start', flexWrap: 'wrap' },
   mainContent: { flex: 1, minWidth: '400px', display: 'flex', flexDirection: 'column', gap: '12px' },
   filterBar: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: tokens.colorNeutralBackground2, padding: '10px 14px', borderRadius: tokens.borderRadiusMedium },
@@ -62,22 +65,22 @@ export default function RelatorioDashboard() {
   }, [escolasAgregadas]);
   const columns = [
     createTableColumn<EscolaAgregada>({
-      columnId: 'nome',
+      columnId: 'nome', compare: (a, b) => cmpTexto(a.nome, b.nome),
       renderHeaderCell: () => 'Instituição de Ensino',
       renderCell: e => <TableCellLayout><Text weight="semibold">{e.nome}</Text></TableCellLayout>
     }),
     createTableColumn<EscolaAgregada>({
-      columnId: 'tipo',
+      columnId: 'tipo', compare: (a, b) => cmpTexto(a.tipo, b.tipo),
       renderHeaderCell: () => 'Tipo',
-      renderCell: e => <TableCellLayout><Badge appearance="outline">{e.tipo}</Badge></TableCellLayout>
+      renderCell: e => <TableCellLayout><Badge appearance="tint" color={corTipoEscola(e.tipo)}>{e.tipo}</Badge></TableCellLayout>
     }),
     createTableColumn<EscolaAgregada>({
-      columnId: 'alunos',
+      columnId: 'alunos', compare: (a, b) => cmpNumero(a.estatisticas.totalAlunos, b.estatisticas.totalAlunos),
       renderHeaderCell: () => 'Qtd Alunos',
       renderCell: e => <TableCellLayout>{e.estatisticas.totalAlunos} un.</TableCellLayout>
     }),
     createTableColumn<EscolaAgregada>({
-      columnId: 'distancia',
+      columnId: 'distancia', compare: (a, b) => cmpNumero(parseFloat(a.estatisticas.distanciaMedia), parseFloat(b.estatisticas.distanciaMedia)),
       renderHeaderCell: () => 'Distância Média',
       renderCell: e => <TableCellLayout>{e.estatisticas.distanciaMedia} km</TableCellLayout>
     }),
@@ -91,7 +94,7 @@ export default function RelatorioDashboard() {
           icon={<Search24Regular/>} 
           appearance="subtle" 
           size="medium" 
-          onClick={() => setEscolaSelecionadaId(e.id)}
+          onClick={() => setEscolaSelecionadaId(e.id)} 
         />
       </Tooltip>
     </TableCellLayout>
@@ -104,7 +107,8 @@ export default function RelatorioDashboard() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="📊 Relatório Gerencial e Socioespacial"
+        icon={<DataTrending24Regular />}
+        title="Relatório Gerencial e Socioespacial"
         subtitle="Dados consolidados de infraestrutura e mobilidade estudantil"
         actions={<Button
             appearance="outline"
@@ -119,34 +123,15 @@ export default function RelatorioDashboard() {
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       <div className={s.kpiGrid}>
-        <div className={s.kpiCard}>
-          <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>Total de Escolas</Text>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-            <Building24Regular style={{ color: tokens.colorBrandForeground1 }} />
-            <Text size={600} weight="bold">{kpisGlobais.totalEscolas}</Text>
-          </div>
-        </div>
-        <div className={s.kpiCard}>
-          <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>Total de Alunos</Text>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-            <People24Regular style={{ color: tokens.colorBrandForeground1 }} />
-            <Text size={600} weight="bold">{kpisGlobais.totalAlunos}</Text>
-          </div>
-        </div>
-        <div className={s.kpiCard}>
-          <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>Distância Média Global</Text>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-            <MyLocation24Regular style={{ color: tokens.colorBrandForeground1 }} />
-            <Text size={600} weight="bold">{kpisGlobais.distanciaMediaGlobal} km</Text>
-          </div>
-        </div>
-        <div className={s.kpiCard}>
-          <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>Uso de Transporte Escolar</Text>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-            <VehicleBus24Regular style={{ color: tokens.colorBrandForeground1 }} />
-            <Text size={600} weight="bold">{kpisGlobais.totalTransporte}</Text>
-          </div>
-        </div>
+        <KpiCard
+          icon={<Building24Regular />}
+          label="Total de Escolas"
+          value={kpisGlobais.totalEscolas}
+          hint={`${tiposDisponiveis.length} tipo${tiposDisponiveis.length !== 1 ? 's' : ''} de dependência`}
+        />
+        <KpiCard icon={<People24Regular />} label="Total de Alunos" value={kpisGlobais.totalAlunos} hint="vinculados às escolas" />
+        <KpiCard icon={<MyLocation24Regular />} label="Distância Média Global" value={`${kpisGlobais.distanciaMediaGlobal} km`} hint="média entre as escolas com alunos" />
+        <KpiCard icon={<VehicleBus24Regular />} label="Uso de Transporte Escolar" value={kpisGlobais.totalTransporte} hint="alunos que usam transporte escolar" />
       </div>
 
       <div className={s.contentLayout}>
@@ -166,7 +151,7 @@ export default function RelatorioDashboard() {
           </div>
 
           <div className={s.tableWrap}>
-            <DataGrid items={filtrados} columns={columns} resizableColumns>
+            <DataGrid items={filtrados} columns={columns} sortable resizableColumns>
               <DataGridHeader>
                 <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
               </DataGridHeader>
@@ -179,9 +164,7 @@ export default function RelatorioDashboard() {
               </DataGridBody>
             </DataGrid>
             {filtrados.length === 0 && (
-              <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-                Nenhuma escola encontrada para os filtros atuais.
-              </div>
+              <EmptyState message="Nenhuma escola encontrada para os filtros atuais." />
             )}
           </div>
         </div>

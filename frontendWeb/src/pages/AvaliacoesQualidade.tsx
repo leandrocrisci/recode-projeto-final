@@ -3,21 +3,25 @@ import {
   makeStyles, tokens, Button, Input, Field, Select, Textarea,
   DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
   TableCellLayout, createTableColumn, Spinner, MessageBar, MessageBarBody,
-  Badge, Tooltip,
+  Tooltip,
 } from '@fluentui/react-components';
-import { Add24Regular, Edit24Regular, Delete24Regular } from '@fluentui/react-icons';
+import { Add24Regular, Edit24Regular, Delete24Regular, StarEmphasis24Regular } from '@fluentui/react-icons';
 import { getAvaliacoesQualidade, createAvaliacaoQualidade, updateAvaliacaoQualidade, deleteAvaliacaoQualidade, getEscolas } from '../services/api';
 import type { AvaliacaoQualidade, Escola } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
+import { Stars } from '../components/Stars';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
   tableWrap: { border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium, overflow: 'hidden' },
   actionCell: { display: 'flex', gap: '6px' },
+  notaCell: { display: 'inline-flex', alignItems: 'center', gap: '8px' },
 });
 
 const empty = { nota: '', comentario: '', dataAvaliacao: '', escolaId: '' };
@@ -27,6 +31,7 @@ export default function AvaliacoesQualidade() {
   const s = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoQualidade[]>([]);
   const [escolas,    setEscolas]    = useState<Escola[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -82,23 +87,10 @@ const handleSubmit = async (ev: React.FormEvent) => {
   }
 };
 
-  const importAvaliacao = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
-    const nota = sheetNumber(sheetValue(row, 'nota'), 'nota');
-    if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
-      throw new Error('A nota de qualidade deve ser um inteiro entre 1 e 5.');
-    }
-    await createAvaliacaoQualidade(escola.id, {
-      nota,
-      comentario: sheetValue(row, 'comentario') || null,
-      dataAvaliacao: sheetValue(row, 'dataAvaliacao') || null,
-    });
-  };
-
 
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Deseja realmente excluir esta avaliação?')) return;
+    if (!(await confirmar('Deseja realmente excluir esta avaliação?'))) return;
     setError('');
     try {
       await deleteAvaliacaoQualidade(id);
@@ -111,12 +103,10 @@ const handleSubmit = async (ev: React.FormEvent) => {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const starColor: Record<number, 'success' | 'warning' | 'danger'> = { 5: 'success', 4: 'success', 3: 'warning', 2: 'danger', 1: 'danger' };
-
   const columns = [
-    createTableColumn<AvaliacaoQualidade>({ columnId: 'escola',   renderHeaderCell: () => 'Escola',    renderCell: i => <TableCellLayout>{i.escola?.nome ?? '—'}</TableCellLayout> }),
-    createTableColumn<AvaliacaoQualidade>({ columnId: 'nota',     renderHeaderCell: () => 'Nota',      renderCell: i => <TableCellLayout><Badge appearance="filled" color={starColor[i.nota] ?? 'warning'}>{stars(i.nota)} ({i.nota})</Badge></TableCellLayout> }),
-    createTableColumn<AvaliacaoQualidade>({ columnId: 'data',     renderHeaderCell: () => 'Data',      renderCell: i => <TableCellLayout>{i.dataAvaliacao ?? '—'}</TableCellLayout> }),
+    createTableColumn<AvaliacaoQualidade>({ columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome),   renderHeaderCell: () => 'Escola',    renderCell: i => <TableCellLayout>{i.escola?.nome ?? '—'}</TableCellLayout> }),
+    createTableColumn<AvaliacaoQualidade>({ columnId: 'nota', compare: (a, b) => cmpNumero(a.nota, b.nota),     renderHeaderCell: () => 'Nota',      renderCell: i => <TableCellLayout><span className={s.notaCell}><Stars value={i.nota} /><span>{i.nota}/5</span></span></TableCellLayout> }),
+    createTableColumn<AvaliacaoQualidade>({ columnId: 'data', compare: (a, b) => cmpTexto(a.dataAvaliacao, b.dataAvaliacao),     renderHeaderCell: () => 'Data',      renderCell: i => <TableCellLayout>{i.dataAvaliacao ?? '—'}</TableCellLayout> }),
     createTableColumn<AvaliacaoQualidade>({ columnId: 'coment',   renderHeaderCell: () => 'Comentário',renderCell: i => <TableCellLayout>{i.comentario ?? '—'}</TableCellLayout> }),
     ...(isAdmin ? [createTableColumn<AvaliacaoQualidade>({ columnId: 'acoes', renderHeaderCell: () => 'Ações',
       renderCell: i => (
@@ -133,27 +123,18 @@ const handleSubmit = async (ev: React.FormEvent) => {
   return (
     <div className={s.page}>
       <PageHeader
-        title="⭐ Avaliações de Qualidade"
-        actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="avaliações de qualidade"
-              requiredColumns={['escola', 'nota']}
-              onImportRow={importAvaliacao}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>
-          </>
-        )}
+        icon={<StarEmphasis24Regular />}
+        title="Avaliações de Qualidade"
+        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>}
       />
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={avaliacoes} columns={columns} resizableColumns>
+          <DataGrid items={avaliacoes} columns={columns} sortable resizableColumns>
             <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
             <DataGridBody<AvaliacaoQualidade>>{({ item, rowId }) => <DataGridRow<AvaliacaoQualidade> key={rowId}>{({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}</DataGridRow>}</DataGridBody>
           </DataGrid>
-          {avaliacoes.length === 0 && <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>Nenhuma avaliação cadastrada.</div>}
+          {avaliacoes.length === 0 && <EmptyState message="Nenhuma avaliação cadastrada." />}
         </div>
       )}
       <AppDialog open={modal} title={editId ? 'Editar Avaliação' : 'Nova Avaliação de Qualidade'} onClose={closeModal}>
@@ -185,6 +166,7 @@ const handleSubmit = async (ev: React.FormEvent) => {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

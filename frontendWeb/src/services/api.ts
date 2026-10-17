@@ -13,10 +13,14 @@ export function registerLogger(fn: AddLogFn) {
 
 // ── Instância Axios ──────────────────────────────────────────────────────────
 
+const configuredApiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8090/api').replace(/\/+$/, '');
+const apiBaseUrl = /\/api$/i.test(configuredApiUrl) ? configuredApiUrl : `${configuredApiUrl}/api`;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8090/api',
+  baseURL: apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
 });
+
 
 // ── Interceptor de requisição ────────────────────────────────────────────────
 

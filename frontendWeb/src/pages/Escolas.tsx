@@ -15,9 +15,12 @@ import {
 import type { Escola, EnderecoEscola } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpTexto } from '../utils/tableSort';
+import { corTipoEscola } from '../utils/tipoEscola';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -32,6 +35,7 @@ export default function Escolas() {
   const s = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
 
   const [escolas,    setEscolas]    = useState<Escola[]>([]);
   const [enderecos,  setEnderecos]  = useState<EnderecoEscola[]>([]);
@@ -157,50 +161,8 @@ export default function Escolas() {
     }
   };
 
-  const importEscola = async (row: GoogleSheetRow) => {
-    const nome = sheetValue(row, 'nome');
-    const tipo = sheetValue(row, 'tipo');
-    if (!nome || !tipo) throw new Error('Nome e tipo da escola são obrigatórios.');
-    if (!['Pública', 'Estadual', 'Municipal', 'Técnica', 'Privada', 'Federal'].includes(tipo)) {
-      throw new Error(`Tipo de escola inválido: "${tipo}".`);
-    }
-    const addressFields = ['logradouro', 'cidade', 'estado'];
-    const hasAddress = ['logradouro', 'numero', 'bairro', 'cidade', 'estado', 'cep']
-      .some(field => sheetValue(row, field));
-    if (hasAddress) {
-      const missing = addressFields.filter(field => !sheetValue(row, field));
-      if (missing.length) {
-        throw new Error(`Endereço incompleto; informe ${missing.join(', ')}.`);
-      }
-      if (sheetValue(row, 'estado').length !== 2) throw new Error('Estado do endereço deve ser a sigla de 2 letras.');
-    }
-    const created = await createEscola({
-      nome,
-      tipo,
-      telefone: sheetValue(row, 'telefone') || null,
-      email: sheetValue(row, 'email') || null,
-    });
-    if (hasAddress) {
-      try {
-        await createEndereco(created.data.id, {
-          escola: { id: created.data.id },
-          logradouro: sheetValue(row, 'logradouro'),
-          numero: sheetValue(row, 'numero') || null,
-          bairro: sheetValue(row, 'bairro') || null,
-          cidade: sheetValue(row, 'cidade'),
-          estado: sheetValue(row, 'estado').toUpperCase(),
-          cep: sheetValue(row, 'cep') || null,
-        });
-      } catch (cause) {
-        load();
-        const reason = cause instanceof Error ? cause.message : 'a API rejeitou o endereço.';
-        throw new Error(`A escola "${nome}" foi criada, mas seu endereço não foi: ${reason}`);
-      }
-    }
-  };
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Deseja remover permanentemente esta unidade de ensino?')) return;
+    if (!(await confirmar('Deseja remover permanentemente esta unidade de ensino?'))) return;
     try { 
       await deleteEscola(id); 
       load(); 
@@ -212,37 +174,29 @@ export default function Escolas() {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormEscola(f => ({ ...f, [k]: e.target.value }));
 
-  const obterEstiloTipo = (tipo: string) => {
-    const t = tipo?.toLowerCase();
-    if (t === 'pública' || t === 'municipal') return 'informative';
-    if (t === 'estadual') return 'success';
-    if (t === 'técnica') return 'warning';
-    return 'subtle';
-  };
-
   const columns = [
     createTableColumn<Escola>({ 
-      columnId: 'nome',     
+      columnId: 'nome', compare: (a, b) => cmpTexto(a.nome, b.nome),     
       renderHeaderCell: () => 'Unidade de Ensino',      
       renderCell: i => <TableCellLayout media={<Building24Regular />}><b>{i.nome}</b></TableCellLayout> 
     }),
     createTableColumn<Escola>({ 
-      columnId: 'tipo',     
+      columnId: 'tipo', compare: (a, b) => cmpTexto(a.tipo, b.tipo),     
       renderHeaderCell: () => 'Classificação',      
-      renderCell: i => <TableCellLayout><Badge appearance="filled" color={obterEstiloTipo(i.tipo)}>{i.tipo}</Badge></TableCellLayout> 
+      renderCell: i => <TableCellLayout><Badge appearance="tint" color={corTipoEscola(i.tipo)}>{i.tipo}</Badge></TableCellLayout> 
     }),
     createTableColumn<Escola>({ 
-      columnId: 'telefone', 
+      columnId: 'telefone', compare: (a, b) => cmpTexto(a.telefone, b.telefone), 
       renderHeaderCell: () => 'Telefone',  
       renderCell: i => <TableCellLayout>{i.telefone || '—'}</TableCellLayout> 
     }),
     createTableColumn<Escola>({ 
-      columnId: 'email',    
+      columnId: 'email', compare: (a, b) => cmpTexto(a.email, b.email),    
       renderHeaderCell: () => 'E-mail Institucional',    
       renderCell: i => <TableCellLayout>{i.email || '—'}</TableCellLayout> 
     }),
     createTableColumn<Escola>({ 
-      columnId: 'endereco', 
+      columnId: 'endereco', compare: (a, b) => cmpTexto(enderecoResumido(a.id), enderecoResumido(b.id)), 
       renderHeaderCell: () => 'Localização Geográfica',  
       renderCell: i => <TableCellLayout media={<Location24Regular />}>{enderecoResumido(i.id)}</TableCellLayout> 
     }),
@@ -267,20 +221,13 @@ export default function Escolas() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="🏫 Gestão de Unidades Escolares"
+        icon={<Building24Regular />}
+        title="Gestão de Unidades Escolares"
         subtitle={`${escolas.length} escola${escolas.length !== 1 ? 's' : ''} integrada${escolas.length !== 1 ? 's' : ''} ao censo`}
         actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="escolas"
-              requiredColumns={['nome', 'tipo']}
-              onImportRow={importEscola}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>
-              Nova Escola
-            </Button>
-          </>
+          <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>
+            Nova Escola
+          </Button>
         )}
       />
 
@@ -290,7 +237,7 @@ export default function Escolas() {
         <Spinner label="Consolidando base de dados cartográfica..." />
       ) : (
         <div className={s.tableWrap}>
-          <DataGrid items={escolas} columns={columns} resizableColumns columnSizingOptions={{ nome: { defaultWidth: 260 }, endereco: { defaultWidth: 260 } }}>
+          <DataGrid items={escolas} columns={columns} sortable resizableColumns columnSizingOptions={{ nome: { defaultWidth: 260 }, endereco: { defaultWidth: 260 } }}>
             <DataGridHeader>
               <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
             </DataGridHeader>
@@ -303,9 +250,7 @@ export default function Escolas() {
             </DataGridBody>
           </DataGrid>
           {escolas.length === 0 && (
-            <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-              Nenhuma unidade escolar cadastrada no sistema local.
-            </div>
+            <EmptyState message="Nenhuma unidade escolar cadastrada no sistema local." />
           )}
         </div>
       )}
@@ -362,6 +307,7 @@ export default function Escolas() {
           </form>
         )}
       </AppDialog>
+      {dialog}
     </div>
   );
 }

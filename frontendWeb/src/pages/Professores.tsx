@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   makeStyles, tokens, Button, Input, Field, Select, Textarea,
   DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell,
@@ -6,7 +6,7 @@ import {
   Badge, Tooltip,
 } from '@fluentui/react-components';
 import {
-  Add24Regular, Edit24Regular, Delete24Regular, Person24Regular,
+  Add24Regular, Edit24Regular, Delete24Regular, Person24Regular, PersonBoard24Regular
 } from '@fluentui/react-icons';
 import {
   getProfessores, createProfessor, updateProfessor, deleteProfessor, getEscolas,
@@ -14,9 +14,11 @@ import {
 import type { Professor, Escola } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page:       { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -30,10 +32,10 @@ export default function Professores() {
   const s  = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
 
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [escolas,     setEscolas]     = useState<Escola[]>([]);
-  const escolasImportRef = useRef<Escola[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState('');
   const [modal,       setModal]       = useState(false);
@@ -44,35 +46,11 @@ export default function Professores() {
   const load = () => {
     setLoading(true);
     Promise.all([getProfessores(), getEscolas()])
-      .then(([p, e]) => {
-        setProfessores(p.data);
-        setEscolas(e.data);
-        escolasImportRef.current = e.data;
-      })
+      .then(([p, e]) => { setProfessores(p.data); setEscolas(e.data); })
       .catch(() => setError('Erro ao carregar professores.'))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
-
-  const refreshEscolasForImport = async () => {
-    const response = await getEscolas();
-    escolasImportRef.current = response.data;
-    setEscolas(response.data);
-  };
-
-  const validateProfessorRows = (rows: GoogleSheetRow[]) => {
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-      const rowNumber = Number((row as GoogleSheetRow & { __rowNumber?: number }).__rowNumber) || index + 2;
-      try {
-        findSheetEntity(escolasImportRef.current, sheetValue(row, 'escola'), 'Escola');
-      } catch (cause) {
-        const reason = cause instanceof Error ? cause.message : 'Escola não encontrada.';
-        throw new Error(`Falha na linha ${rowNumber}: ${reason}`, { cause });
-      }
-      if (!sheetValue(row, 'nome')) throw new Error(`Falha na linha ${rowNumber}: nome do professor é obrigatório.`);
-    }
-  };
 
   const openNew = () => {
     setForm(emptyForm); setEditId(null); setError(''); setModal(true);
@@ -108,21 +86,8 @@ export default function Professores() {
     finally { setSaving(false); }
   };
 
-  const importProfessor = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolasImportRef.current, sheetValue(row, 'escola'), 'Escola');
-    const nome = sheetValue(row, 'nome');
-    if (!nome) throw new Error('Nome do professor é obrigatório.');
-    await createProfessor(escola.id, {
-      nome,
-      email: sheetValue(row, 'email') || null,
-      telefone: sheetValue(row, 'telefone') || null,
-      especialidade: sheetValue(row, 'especialidade') || null,
-      biografia: sheetValue(row, 'biografia') || null,
-    });
-  };
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Excluir este professor?')) return;
+    if (!(await confirmar('Excluir este professor?'))) return;
     try { await deleteProfessor(id); load(); }
     catch { setError('Erro ao excluir professor.'); }
   };
@@ -133,10 +98,10 @@ export default function Professores() {
 
   const columns = [
     // createTableColumn<Professor>({ columnId: 'id',           renderHeaderCell: () => '#',            renderCell: p => <TableCellLayout>{p.id}</TableCellLayout> }),
-    createTableColumn<Professor>({ columnId: 'nome',         renderHeaderCell: () => 'Nome',          renderCell: p => <TableCellLayout media={<Person24Regular />}>{p.nome}</TableCellLayout> }),
-    createTableColumn<Professor>({ columnId: 'especialidade',renderHeaderCell: () => 'Especialidade', renderCell: p => <TableCellLayout><Badge appearance="outline">{p.especialidade ?? '—'}</Badge></TableCellLayout> }),
-    createTableColumn<Professor>({ columnId: 'escola',       renderHeaderCell: () => 'Escola',        renderCell: p => <TableCellLayout>{p.escola?.nome ?? '—'}</TableCellLayout> }),
-    createTableColumn<Professor>({ columnId: 'email',        renderHeaderCell: () => 'E-mail',        renderCell: p => <TableCellLayout>{p.email ?? '—'}</TableCellLayout> }),
+    createTableColumn<Professor>({ columnId: 'nome', compare: (a, b) => cmpTexto(a.nome, b.nome),         renderHeaderCell: () => 'Nome',          renderCell: p => <TableCellLayout media={<Person24Regular />}>{p.nome}</TableCellLayout> }),
+    createTableColumn<Professor>({ columnId: 'especialidade', compare: (a, b) => cmpTexto(a.especialidade, b.especialidade),renderHeaderCell: () => 'Especialidade', renderCell: p => <TableCellLayout><Badge appearance="outline">{p.especialidade ?? '—'}</Badge></TableCellLayout> }),
+    createTableColumn<Professor>({ columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome),       renderHeaderCell: () => 'Escola',        renderCell: p => <TableCellLayout>{p.escola?.nome ?? '—'}</TableCellLayout> }),
+    createTableColumn<Professor>({ columnId: 'email', compare: (a, b) => cmpTexto(a.email, b.email),        renderHeaderCell: () => 'E-mail',        renderCell: p => <TableCellLayout>{p.email ?? '—'}</TableCellLayout> }),
     createTableColumn<Professor>({ columnId: 'telefone',     renderHeaderCell: () => 'Telefone',      renderCell: p => <TableCellLayout>{p.telefone ?? '—'}</TableCellLayout> }),
     ...(isAdmin ? [createTableColumn<Professor>({ columnId: 'acoes', renderHeaderCell: () => 'Ações',
       renderCell: p => (
@@ -153,28 +118,17 @@ export default function Professores() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="👨‍🏫 Professores"
+        icon={<PersonBoard24Regular />}
+        title="Professores"
         subtitle={`${professores.length} professor${professores.length !== 1 ? 'es' : ''} cadastrado${professores.length !== 1 ? 's' : ''}`}
-        actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="professores"
-              requiredColumns={['nome', 'escola']}
-              onBeforeImport={refreshEscolasForImport}
-              validateRows={validateProfessorRows}
-              onImportRow={importProfessor}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Professor</Button>
-          </>
-        )}
+        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Professor</Button>}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {loading ? <Spinner label="Carregando professores..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={professores} columns={columns} resizableColumns
+          <DataGrid items={professores} columns={columns} sortable resizableColumns
             columnSizingOptions={{ nome: { defaultWidth: 200 }, escola: { defaultWidth: 200 } }}>
             <DataGridHeader>
               <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
@@ -188,9 +142,7 @@ export default function Professores() {
             </DataGridBody>
           </DataGrid>
           {professores.length === 0 && (
-            <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-              Nenhum professor cadastrado.
-            </div>
+            <EmptyState message="Nenhum professor cadastrado." />
           )}
         </div>
       )}
@@ -232,6 +184,7 @@ export default function Professores() {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

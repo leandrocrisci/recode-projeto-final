@@ -136,6 +136,30 @@ const useStyles = makeStyles({
     borderRadius: tokens.borderRadiusMedium,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
   },
+  diagramFrame: {
+    width: '100%',
+    overflowX: 'auto',
+    padding: '12px',
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  diagramImage: {
+    display: 'block',
+    width: '100%',
+    minWidth: '680px',
+    height: 'auto',
+  },
+  diagramSource: {
+    display: 'inline-flex',
+    alignSelf: 'flex-start',
+    padding: '8px 12px',
+    borderRadius: tokens.borderRadiusMedium,
+    color: tokens.colorBrandForeground1,
+    backgroundColor: tokens.colorNeutralBackground2,
+    textDecorationLine: 'none',
+    fontWeight: '600',
+  },
   erRow: { display: 'flex', gap: '24px', flexWrap: 'wrap' as const, justifyContent: 'center' },
   archLayer: {
     display: 'flex', flexDirection: 'column', gap: '8px',
@@ -342,11 +366,11 @@ function TabOverview() {
             <CardHeader header={<Text weight="semibold">Backend</Text>} />
             <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
-                ['Java 25', 'Linguagem principal'],
+                ['Java 21', 'Versão definida no Maven'],
                 ['Spring Boot 3.3', 'Framework web'],
                 ['Spring Data JPA', 'ORM / persistência'],
                 ['Hibernate 6.5', 'Implementação JPA'],
-                ['MySQL 8', 'Banco de dados relacional'],
+                ['PostgreSQL', 'Banco de dados relacional'],
                 ['Maven', 'Build e dependências'],
               ].map(([tech, desc]) => (
                 <div key={tech} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
@@ -360,10 +384,10 @@ function TabOverview() {
             <CardHeader header={<Text weight="semibold">Frontend</Text>} />
             <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
-                ['React 18 + TypeScript', 'UI framework'],
+                ['React 19 + TypeScript', 'UI framework'],
                 ['Fluent UI v9', 'Design System Microsoft'],
-                ['Vite 5', 'Build tool'],
-                ['React Router v6', 'Roteamento SPA'],
+                ['Vite 8', 'Build tool'],
+                ['React Router v7', 'Roteamento SPA'],
                 ['Axios', 'Cliente HTTP'],
                 ['Griffel / makeStyles', 'CSS-in-JS'],
               ].map(([tech, desc]) => (
@@ -384,8 +408,8 @@ function TabOverview() {
             { layer: '① Controller', color: '#0f6cbd', chips: ['EscolaController', 'AlunoController', 'ProfessorController', 'PedidoController', 'ProdutoController', '+ 7 outros'], desc: 'Recebe requisições HTTP, valida via @Valid e delega ao Service. Retorna ResponseEntity com status correto.' },
             { layer: '② Service', color: '#107c10', chips: ['EscolaService', 'AlunoService', 'ProfessorService', 'PedidoService', '+ 8 outros'], desc: 'Regra de negócio: resolução de entidades relacionadas, definição de datas, lançamento de RuntimeException para not-found.' },
             { layer: '③ Repository', color: '#8764b8', chips: ['JpaRepository<E,Long>', 'findByNomeContainingIgnoreCase', 'findByEscolaId', 'findByProfessorId'], desc: 'Interfaces Spring Data JPA com derived queries. Sem SQL manual.' },
-            { layer: '④ Model / Entity', color: '#c43501', chips: ['@Entity', '@Table', '@ManyToOne', '@JoinColumn', '@Enumerated', '@GeneratedValue'], desc: '12 entidades JPA mapeadas, sem @OneToMany bidirecional para evitar laços de serialização.' },
-            { layer: '⑤ Banco de Dados', color: '#797673', chips: ['MySQL 8.0', 'InnoDB', 'utf8mb4', 'GENERATED ALWAYS AS', 'ENUM', 'CHECK constraints'], desc: 'Schema gerenciado pelo Hibernate ddl-auto=update. Data seed via data.sql (inicialização Spring).' },
+            { layer: '④ Model / Entity', color: '#c43501', chips: ['@Entity', '@Table', '@ManyToOne', '@JoinColumn', '@Enumerated', '@GeneratedValue'], desc: '11 entidades JPA mapeadas, sem relações bidirecionais @OneToMany.' },
+            { layer: '⑤ Banco de Dados', color: '#797673', chips: ['PostgreSQL', 'Spring Data JPA', 'Hibernate'], desc: 'O schema PostgreSQL é provisionado pelo script SQL; spring.jpa.hibernate.ddl-auto=none.' },
           ].map(({ layer, color, chips, desc }) => (
             <div key={layer} className={s.archLayer}>
               <span className={s.archLayerTitle} style={{ color }}>{layer}</span>
@@ -438,10 +462,8 @@ function TabBancoDados() {
         <Title2>Modelagem do Banco de Dados</Title2>
         <Divider />
         <Body1>
-          Banco MySQL 8 · Engine InnoDB · Charset utf8mb4. 
-          Todas as PKs são <span className={s.inlineCode}>BIGINT AUTO_INCREMENT</span>. 
-          FKs explícitas com nomenclatura <span className={s.inlineCode}>FK&lt;tabela&gt;&lt;coluna&gt;</span>.
-          A coluna <span className={s.inlineCode}>valortotal</span> em pedidos é <span className={s.inlineCode}>GENERATED ALWAYS AS (quantidade * valorunitario) STORED</span>.
+          Banco PostgreSQL. O modelo visual abaixo reflete os relacionamentos JPA do backend; veja o script PostgreSQL
+          na raiz do projeto para a definição física do schema.
         </Body1>
       </div>
 
@@ -467,7 +489,7 @@ function TabBancoDados() {
           </thead>
           <tbody>
             {[
-              ['Escola', 'N:1', 'EndereçoEscola', 'escolaid'],
+              ['Escola', '1:1', 'EnderecoEscola', 'enderecosescolas.escolaid'],
               ['Escola', '1:N', 'Curso', 'cursos.escolaid'],
               ['Escola', '1:N', 'Aluno', 'alunos.escolaid'],
               ['Escola', '1:N', 'Professor', 'professores.escolaid'],
@@ -476,11 +498,9 @@ function TabBancoDados() {
               ['Curso', '1:N', 'Aluno', 'alunos.cursoid'],
               ['Curso', '1:N', 'Matricula', 'matriculas.cursoid'],
               ['Curso', '1:N', 'ProgressoAluno', 'progressosalunos.cursoid'],
-              ['Curso', '1:N', 'AvaliacoesCursos', 'avaliacoescursos.cursoid'],
+              ['Curso', '1:N', 'AvaliacaoCurso', 'avaliacoescursos.cursoid'],
               ['Aluno', '1:N', 'Matricula', 'matriculas.alunoid'],
               ['Aluno', '1:N', 'ProgressoAluno', 'progressosalunos.alunoid'],
-              ['Aluno', '1:N', 'AvaliacoesCursos', 'avaliacoescursos.alunoid'],
-              ['Aluno', '1:1', 'EnderecoAluno', 'enderecosalunos.alunoid'],
               ['Produto', '1:N', 'Pedido', 'pedidos.produtoid'],
               ['Professor', '1:N', 'Pedido', 'pedidos.professorid (vendedor)'],
             ].map(([de, card, para, fk], i) => (
@@ -496,11 +516,12 @@ function TabBancoDados() {
       </div>
 
       <div className={s.section}>
-        <Title3>Script de Criação — Tabelas </Title3>
-        <pre className={s.codeBlock}>{`Se você quer o script de criação de todas as tabelas do banco de dados de uma vez, a ferramenta de linha de comando mysqldump é a melhor opção.
-Abra o prompt de comando do seu computador (não o console do MySQL) e execute
-
-mysqldump -u seu_usuario -p --no-data nome_do_banco > script_criacao.sql
+        <Title3>Script de Criação — PostgreSQL</Title3>
+        <Body1>
+          O schema atual está em <span className={s.inlineCode}>script_tabelas_recodedb_postgresql.sql</span> na raiz do projeto.
+          O bloco abaixo é um dump legado do MySQL, mantido apenas como referência; não o execute no PostgreSQL.
+        </Body1>
+        <pre className={s.codeBlock}>{`DUMP LEGADO MySQL — apenas referência. Não executar no PostgreSQL.
 
 --
 -- Table structure for table alunos
@@ -764,20 +785,64 @@ function TabUML() {
       <div className={s.infoBox}>
         <CheckmarkCircle16Regular style={{ color: tokens.colorStatusSuccessForeground1, flexShrink: 0, marginTop: 2 }} />
         <Text size={300}>
-          <strong>Diagrama interativo disponível!</strong> Abra o arquivo{' '}
-          <span className={s.inlineCode}>arquitetura.drawio</span> na raiz do workspace com o plugin{' '}
-          <strong>Draw.io Integration</strong> para visualizar e editar o diagrama completo de arquitetura
-          (Frontend → Backend → MySQL) de forma visual. Veja a aba <em>Plugin VS Code</em> para instruções.
+          <strong>Diagramas Draw.io disponíveis.</strong> As prévias SVG abaixo acompanham os arquivos fonte
+          editáveis em <span className={s.inlineCode}>frontendWeb/public/diagramas</span>. Abra qualquer arquivo
+          <span className={s.inlineCode}>.drawio</span> no VS Code com o plugin Draw.io Integration; ao editar a fonte,
+          exporte novamente o SVG para manter a prévia atualizada.
         </Text>
+      </div>
+
+      <div className={s.section}>
+        <Title2>Diagramas do projeto</Title2>
+        <Divider />
+        {[
+          {
+            title: 'Arquitetura da aplicação',
+            image: 'arquitetura.svg',
+            alt: 'Frontend React conectado à API Spring Boot e ao banco PostgreSQL, com importação opcional do Google Sheets.',
+            source: 'arquitetura.drawio',
+          },
+          {
+            title: 'Modelo entidade-relacionamento',
+            image: 'modelo-dados.svg',
+            alt: 'Diagrama das entidades JPA do projeto e seus relacionamentos.',
+            source: 'modelo-dados.drawio',
+          },
+          {
+            title: 'Fluxos principais',
+            image: 'fluxos.svg',
+            alt: 'Fluxos de importação de planilha, solicitação de pedido e carregamento do dashboard.',
+            source: 'fluxos.drawio',
+          },
+        ].map(diagram => (
+          <div key={diagram.source} className={s.section}>
+            <Title3>{diagram.title}</Title3>
+            <div className={s.diagramFrame}>
+              <img
+                className={s.diagramImage}
+                src={`${import.meta.env.BASE_URL}diagramas/${diagram.image}`}
+                alt={diagram.alt}
+                loading="lazy"
+              />
+            </div>
+            <a
+              className={s.diagramSource}
+              href={`${import.meta.env.BASE_URL}diagramas/${diagram.source}`}
+              download
+            >
+              Baixar fonte Draw.io (.drawio)
+            </a>
+          </div>
+        ))}
       </div>
 
       <div className={s.section}>
         <Title2>Diagrama de Classes (UML)</Title2>
         <Divider />
         <Body1>
-          Representação das 12 entidades JPA e seus relacionamentos. Todas as classes pertencem ao pacote
+          Representação das 11 entidades JPA e seus relacionamentos. Todas as classes pertencem ao pacote
           <span className={s.inlineCode}> recode.leandrocrisci.projetofinal.model</span>.
-          O diagrama interativo completo está no arquivo <span className={s.inlineCode}>arquitetura.drawio</span>.
+          O modelo visual editável está no arquivo <span className={s.inlineCode}>modelo-dados.drawio</span>.
         </Body1>
       </div>
 
@@ -1198,31 +1263,31 @@ function TabPlugin() {
       </div>
 
       <div className={s.section}>
-        <Title3>Diagrama do Projeto — arquitetura.drawio</Title3>
+        <Title3>Fontes dos diagramas Draw.io</Title3>
         <Body1>
-          O arquivo <span className={s.inlineCode}>arquitetura.drawio</span> na raiz do workspace já contém o diagrama
-          de arquitetura completo do projeto (Frontend, Backend, Banco de Dados e integrações). Para abri-lo:
+          Os arquivos editáveis ficam em <span className={s.inlineCode}>frontendWeb/public/diagramas</span>.
+          As versões SVG exibidas nesta página devem ser atualizadas quando uma fonte for alterada.
         </Body1>
         {[
           {
             num: '1',
-            title: 'Abrir o diagrama de arquitetura',
-            code: '// No Explorer do VS Code, clique em:\narquitetura.drawio\n\n// O editor visual Draw.io abrirá automaticamente.',
+            title: 'Abrir um diagrama existente',
+            code: 'frontendWeb/public/diagramas/arquitetura.drawio\nfrontendWeb/public/diagramas/modelo-dados.drawio\nfrontendWeb/public/diagramas/fluxos.drawio\n\n// Abra qualquer arquivo com o plugin Draw.io Integration.',
           },
           {
             num: '2',
-            title: 'Abrir o diagrama de fluxo',
-            code: '// Também disponível na raiz do projeto:\nfluxo.dio\n\n// Mesmo clique duplo — o plugin reconhece a extensão .dio',
+            title: 'Exportar uma prévia para a documentação',
+            code: '// No editor Draw.io, exporte como SVG e salve em:\nfrontendWeb/public/diagramas/\n\n// Mantenha os nomes arquitetura.svg, modelo-dados.svg ou fluxos.svg.',
           },
           {
             num: '3',
-            title: 'Exportar como imagem',
-            code: '// Com o arquivo aberto no editor Draw.io:\n// Menu superior → Extras → Editar Diagrama  (para ver XML)\n// Botão direito na canvas → Export → PNG ou SVG',
+            title: 'Conferir a documentação',
+            code: '// Execute o frontend e abra a aba UML / Arquitetura.\n// As prévias SVG são servidas junto com o frontend.',
           },
           {
             num: '4',
             title: 'Criar um novo diagrama',
-            code: '// Crie qualquer arquivo .drawio ou .dio no explorer:\nnovo-diagrama.drawio\n\n// O VS Code abrirá o editor visual em branco automaticamente.',
+            code: '// Salve o novo arquivo .drawio em:\nfrontendWeb/public/diagramas/\n\n// Exporte também o SVG e incorpore a prévia na aba UML / Arquitetura.',
           },
         ].map(step => (
           <div key={step.num} className={s.stepRow}>

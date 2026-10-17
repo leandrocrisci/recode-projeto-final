@@ -5,7 +5,7 @@ import {
   TableCellLayout, createTableColumn, Spinner, MessageBar, MessageBarBody,
   Tooltip, Badge
 } from '@fluentui/react-components';
-import { Add24Regular, Edit24Regular, Delete24Regular, Location24Regular, VehicleBus24Regular } from '@fluentui/react-icons';
+import { Add24Regular, Edit24Regular, Delete24Regular, Location24Regular, VehicleBus24Regular, People24Regular } from '@fluentui/react-icons';
 
 import {
   getAlunos, getEscolas, getCursos, createAluno, updateAluno, deleteAluno  
@@ -14,9 +14,11 @@ import {
 import type { Escola, Curso } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -37,6 +39,7 @@ export default function Alunos() {
   const s = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
 
   const [alunos,    setAlunos]    = useState<any[]>([]);
   const [escolas,   setEscolas]   = useState<Escola[]>([]);
@@ -120,35 +123,8 @@ export default function Alunos() {
     }
   };
 
-  const importAluno = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
-    const curso = findSheetEntity(cursos, sheetValue(row, 'curso'), 'Curso');
-    if (curso.escola?.id !== escola.id) {
-      throw new Error(`O curso "${curso.nome}" não pertence à escola "${escola.nome}".`);
-    }
-    const area = sheetValue(row, 'area').toLowerCase();
-    if (!['urbana', 'rural'].includes(area)) throw new Error('Área deve ser "urbana" ou "rural".');
-    const transporte = sheetValue(row, 'tipoTransporte').toLowerCase();
-    if (!['a_pe', 'transporte_escolar', 'transporte_publico', 'proprio'].includes(transporte)) {
-      throw new Error('tipoTransporte deve ser a_pe, transporte_escolar, transporte_publico ou proprio.');
-    }
-    const distancia = sheetNumber(sheetValue(row, 'distanciaEscola'), 'distanciaEscola');
-    const minutos = sheetNumber(sheetValue(row, 'tempoDeslocamentoMinutos'), 'tempoDeslocamentoMinutos');
-    if (distancia < 0 || !Number.isInteger(minutos) || minutos < 0) {
-      throw new Error('Distância e tempo devem ser positivos; o tempo deve ser inteiro.');
-    }
-    await createAluno({
-      area,
-      distanciaEscola: distancia,
-      tipoTransporte: transporte,
-      tempoDeslocamentoMinutos: minutos,
-      escola: { id: escola.id },
-      curso: { id: curso.id },
-    });
-  };
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Deseja excluir permanentemente este aluno do censo?')) return;
+    if (!(await confirmar('Deseja excluir permanentemente este aluno do censo?'))) return;
     try { 
       await deleteAluno(id); 
       load(); 
@@ -172,7 +148,7 @@ export default function Alunos() {
 
   const columns = [
     createTableColumn<any>({ 
-      columnId: 'area', 
+      columnId: 'area', compare: (a, b) => cmpTexto(a.area, b.area), 
       renderHeaderCell: () => 'Área Residencial', 
       renderCell: i => (
         <TableCellLayout>
@@ -183,27 +159,27 @@ export default function Alunos() {
       )
     }),
     createTableColumn<any>({ 
-      columnId: 'distancia', 
+      columnId: 'distancia', compare: (a, b) => cmpNumero(a.distanciaEscola, b.distanciaEscola), 
       renderHeaderCell: () => 'Distância', 
       renderCell: i => <TableCellLayout media={<Location24Regular />}>{i.distanciaEscola ? `${i.distanciaEscola.toFixed(2)} km` : '—'}</TableCellLayout> 
     }),
     createTableColumn<any>({ 
-      columnId: 'transporte', 
+      columnId: 'transporte', compare: (a, b) => cmpTexto(a.tipoTransporte, b.tipoTransporte), 
       renderHeaderCell: () => 'Modo de Transporte', 
       renderCell: i => <TableCellLayout media={<VehicleBus24Regular />}>{formatarTransporte(i.tipoTransporte)}</TableCellLayout> 
     }),
     createTableColumn<any>({ 
-      columnId: 'tempo', 
+      columnId: 'tempo', compare: (a, b) => cmpNumero(a.tempoDeslocamentoMinutos, b.tempoDeslocamentoMinutos), 
       renderHeaderCell: () => 'Tempo de Trajeto', 
       renderCell: i => <TableCellLayout>{i.tempoDeslocamentoMinutos ? `${i.tempoDeslocamentoMinutos} min` : '—'}</TableCellLayout> 
     }),
     createTableColumn<any>({ 
-      columnId: 'escola', 
+      columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome), 
       renderHeaderCell: () => 'Escola Vinculada', 
       renderCell: i => <TableCellLayout><b>{i.escola?.nome ?? '—'}</b></TableCellLayout> 
     }),
     createTableColumn<any>({ 
-      columnId: 'curso', 
+      columnId: 'curso', compare: (a, b) => cmpTexto(a.curso?.nome, b.curso?.nome), 
       renderHeaderCell: () => 'Curso', 
       renderCell: i => <TableCellLayout>{i.curso?.nome ?? '—'}</TableCellLayout> 
     }),
@@ -228,25 +204,16 @@ export default function Alunos() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="🎓 Alunos"
-        actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="alunos"
-              requiredColumns={['escola', 'curso', 'area', 'distanciaEscola', 'tipoTransporte', 'tempoDeslocamentoMinutos']}
-              onImportRow={importAluno}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Aluno</Button>
-          </>
-        )}
+        icon={<People24Regular />}
+        title="Alunos"
+        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Aluno</Button>}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       
       {loading ? <Spinner label="Carregando indicadores espaciais..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={alunos} columns={columns} resizableColumns>
+          <DataGrid items={alunos} columns={columns} sortable resizableColumns>
             <DataGridHeader>
               <DataGridRow>
                 {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
@@ -261,9 +228,7 @@ export default function Alunos() {
             </DataGridBody>
           </DataGrid>
           {alunos.length === 0 && (
-            <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-              Nenhum aluno localizado no mapeamento.
-            </div>
+            <EmptyState message="Nenhum aluno localizado no mapeamento." />
           )}
         </div>
       )}
@@ -320,6 +285,7 @@ export default function Alunos() {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

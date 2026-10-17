@@ -6,7 +6,7 @@ import {
   Badge, Tooltip,
 } from '@fluentui/react-components';
 import {
-  Add24Regular, Delete24Regular, Cart24Regular, Search24Regular, Edit24Regular,
+  Add24Regular, Delete24Regular, Cart24Regular, Search24Regular, Edit24Regular, ShoppingBag24Regular
 } from '@fluentui/react-icons';
 import {
   getPedidos, createPedido, deletePedido, updatePedido,
@@ -15,9 +15,11 @@ import {
 import type { Pedido, Escola, Produto, Professor } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 // ── Estilos ───────────────────────────────────────────────────────────────────
 
@@ -59,6 +61,7 @@ export default function Pedidos() {
   const s  = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
 
   const [pedidos,    setPedidos]    = useState<Pedido[]>([]);
   const [escolas,    setEscolas]    = useState<Escola[]>([]);
@@ -146,29 +149,8 @@ export default function Pedidos() {
     finally { setSaving(false); }
   };
 
-  const importPedido = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
-    const produto = findSheetEntity(produtos, sheetValue(row, 'produto'), 'Produto');
-    const professor = findSheetEntity(professores, sheetValue(row, 'professor'), 'Professor');
-    if (professor.escola?.id && professor.escola.id !== escola.id) {
-      throw new Error(`O professor "${professor.nome}" não pertence à escola "${escola.nome}".`);
-    }
-    const quantidade = sheetNumber(sheetValue(row, 'quantidade'), 'quantidade');
-    const valorUnitarioText = sheetValue(row, 'valorUnitario');
-    const valorUnitario = valorUnitarioText
-      ? sheetNumber(valorUnitarioText, 'valorUnitario')
-      : produto.preco;
-    const statusPedido = (sheetValue(row, 'statusPedido') || 'processando').toLowerCase();
-    if (!Number.isInteger(quantidade) || quantidade < 1) throw new Error('Quantidade deve ser um inteiro maior que zero.');
-    if (valorUnitario < 0) throw new Error('Valor unitário não pode ser negativo.');
-    if (!['processando', 'enviado', 'entregue', 'cancelado'].includes(statusPedido)) {
-      throw new Error('statusPedido deve ser processando, enviado, entregue ou cancelado.');
-    }
-    await createPedido(escola.id, produto.id, professor.id, { quantidade, valorUnitario, statusPedido });
-  };
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Cancelar/excluir este pedido?')) return;
+    if (!(await confirmar('Cancelar/excluir este pedido?'))) return;
     setError('');
     try { await deletePedido(id); load(); }
     catch { setError('Erro ao excluir pedido.'); }
@@ -181,27 +163,27 @@ export default function Pedidos() {
   // ── Colunas ──────────────────────────────────────────────────────────────────
 
   const columns = [
-    createTableColumn<Pedido>({ columnId: 'escola',
+    createTableColumn<Pedido>({ columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome),
       renderHeaderCell: () => 'Escola',
       renderCell: p => <TableCellLayout>{p.escola?.nome ?? '—'}</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'produto',
+    createTableColumn<Pedido>({ columnId: 'produto', compare: (a, b) => cmpTexto(a.produto?.nome, b.produto?.nome),
       renderHeaderCell: () => 'Produto',
       renderCell: p => <TableCellLayout media={<Cart24Regular />}>{p.produto?.nome ?? '—'}</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'professor',
+    createTableColumn<Pedido>({ columnId: 'professor', compare: (a, b) => cmpTexto(a.professor?.nome, b.professor?.nome),
       renderHeaderCell: () => 'Vendedor',
       renderCell: p => <TableCellLayout>{p.professor?.nome ?? '—'}</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'quantidade',
+    createTableColumn<Pedido>({ columnId: 'quantidade', compare: (a, b) => cmpNumero(a.quantidade, b.quantidade),
       renderHeaderCell: () => 'Qtd',
       renderCell: p => <TableCellLayout>{p.quantidade} un.</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'valorUnitario',
+    createTableColumn<Pedido>({ columnId: 'valorUnitario', compare: (a, b) => cmpNumero(a.valorUnitario, b.valorUnitario),
       renderHeaderCell: () => 'Vlr Unitário',
       renderCell: p => <TableCellLayout>{fmtPreco(p.valorUnitario)}</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'total',
+    createTableColumn<Pedido>({ columnId: 'total', compare: (a, b) => cmpNumero(a.quantidade * a.valorUnitario, b.quantidade * b.valorUnitario),
       renderHeaderCell: () => 'Total',
       renderCell: p => (
         <TableCellLayout>
@@ -211,11 +193,11 @@ export default function Pedidos() {
         </TableCellLayout>
       ),
     }),
-    createTableColumn<Pedido>({ columnId: 'dataPedido',
+    createTableColumn<Pedido>({ columnId: 'dataPedido', compare: (a, b) => cmpTexto(a.dataPedido, b.dataPedido),
       renderHeaderCell: () => 'Data',
       renderCell: p => <TableCellLayout>{fmtData(p.dataPedido)}</TableCellLayout>,
     }),
-    createTableColumn<Pedido>({ columnId: 'status',
+    createTableColumn<Pedido>({ columnId: 'status', compare: (a, b) => cmpTexto(a.statusPedido, b.statusPedido),
       renderHeaderCell: () => 'Status',
       renderCell: p => (
         <TableCellLayout>
@@ -252,21 +234,10 @@ export default function Pedidos() {
     <div className={s.page}>
       {/* Cabeçalho */}
       <PageHeader
-        title="🛒 Pedidos"
+        icon={<ShoppingBag24Regular />}
+        title="Pedidos"
         subtitle={`${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''} no sistema`}
-        actions={(
-          <>
-            {isAdmin && (
-              <GoogleSheetsImporter
-                title="pedidos"
-                requiredColumns={['escola', 'produto', 'professor', 'quantidade']}
-                onImportRow={importPedido}
-                onComplete={load}
-              />
-            )}
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Pedido</Button>
-          </>
-        )}
+        actions={<Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Pedido</Button>}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
@@ -295,7 +266,7 @@ export default function Pedidos() {
       {/* Tabela */}
       {loading ? <Spinner label="Carregando pedidos..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={filtrados} columns={columns} resizableColumns
+          <DataGrid items={filtrados} columns={columns} sortable resizableColumns
             columnSizingOptions={{ escola: { defaultWidth: 180 }, produto: { defaultWidth: 180 }, professor: { defaultWidth: 160 } }}>
             <DataGridHeader>
               <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
@@ -309,9 +280,7 @@ export default function Pedidos() {
             </DataGridBody>
           </DataGrid>
           {filtrados.length === 0 && (
-            <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-              Nenhum pedido encontrado.
-            </div>
+            <EmptyState message="Nenhum pedido encontrado." />
           )}
         </div>
       )}
@@ -394,6 +363,7 @@ export default function Pedidos() {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

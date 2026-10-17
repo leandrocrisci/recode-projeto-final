@@ -10,9 +10,11 @@ import { getEnderecos, getEscolas, createEndereco, updateEndereco, deleteEnderec
 import type { EnderecoEscola, Escola } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpTexto } from '../utils/tableSort';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -24,6 +26,7 @@ export default function Enderecos() {
   const s = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
   const [enderecos, setEnderecos] = useState<EnderecoEscola[]>([]);
   const [escolas,   setEscolas]   = useState<Escola[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -62,39 +65,21 @@ export default function Enderecos() {
     finally { setSaving(false); }
   };
 
-  const importEndereco = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
-    const estado = sheetValue(row, 'estado').toUpperCase();
-    if (estado.length !== 2) throw new Error('Estado deve conter a sigla de 2 letras.');
-    const logradouro = sheetValue(row, 'logradouro');
-    const cidade = sheetValue(row, 'cidade');
-    if (!logradouro || !cidade) throw new Error('Logradouro e cidade são obrigatórios.');
-    await createEndereco(escola.id, {
-      escola: { id: escola.id },
-      cep: sheetValue(row, 'cep') || null,
-      logradouro,
-      numero: sheetValue(row, 'numero') || null,
-      bairro: sheetValue(row, 'bairro') || null,
-      cidade,
-      estado,
-    });
-  };
-
   const columns = [
     // createTableColumn<EnderecoEscola>({ columnId: 'id',        renderHeaderCell: () => '#',          renderCell: i => <TableCellLayout>{i.id}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'escola',    renderHeaderCell: () => 'Escola',      renderCell: i => <TableCellLayout>{i.escola?.nome ?? '—'}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'logr',      renderHeaderCell: () => 'Logradouro',  renderCell: i => <TableCellLayout media={<Location24Regular />}>{i.logradouro}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'num',       renderHeaderCell: () => 'Nº',          renderCell: i => <TableCellLayout>{i.numero ?? '—'}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'bairro',    renderHeaderCell: () => 'Bairro',      renderCell: i => <TableCellLayout>{i.bairro ?? '—'}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'cidade',    renderHeaderCell: () => 'Cidade',      renderCell: i => <TableCellLayout>{i.cidade}</TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'uf',        renderHeaderCell: () => 'UF',          renderCell: i => <TableCellLayout><Badge appearance="outline" size="small">{i.estado}</Badge></TableCellLayout> }),
-    createTableColumn<EnderecoEscola>({ columnId: 'cep',       renderHeaderCell: () => 'CEP',         renderCell: i => <TableCellLayout>{i.cep ?? '—'}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome),    renderHeaderCell: () => 'Escola',      renderCell: i => <TableCellLayout>{i.escola?.nome ?? '—'}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'logr', compare: (a, b) => cmpTexto(a.logradouro, b.logradouro),      renderHeaderCell: () => 'Logradouro',  renderCell: i => <TableCellLayout media={<Location24Regular />}>{i.logradouro}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'num', compare: (a, b) => cmpTexto(a.numero, b.numero),       renderHeaderCell: () => 'Nº',          renderCell: i => <TableCellLayout>{i.numero ?? '—'}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'bairro', compare: (a, b) => cmpTexto(a.bairro, b.bairro),    renderHeaderCell: () => 'Bairro',      renderCell: i => <TableCellLayout>{i.bairro ?? '—'}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'cidade', compare: (a, b) => cmpTexto(a.cidade, b.cidade),    renderHeaderCell: () => 'Cidade',      renderCell: i => <TableCellLayout>{i.cidade}</TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'uf', compare: (a, b) => cmpTexto(a.estado, b.estado),        renderHeaderCell: () => 'UF',          renderCell: i => <TableCellLayout><Badge appearance="outline" size="small">{i.estado}</Badge></TableCellLayout> }),
+    createTableColumn<EnderecoEscola>({ columnId: 'cep', compare: (a, b) => cmpTexto(a.cep, b.cep),       renderHeaderCell: () => 'CEP',         renderCell: i => <TableCellLayout>{i.cep ?? '—'}</TableCellLayout> }),
     ...(isAdmin ? [createTableColumn<EnderecoEscola>({ columnId: 'acoes', renderHeaderCell: () => 'Ações',
       renderCell: i => (
         <TableCellLayout>
           <div className={s.actionCell}>
             <Tooltip content="Editar" relationship="label"><Button icon={<Edit24Regular />} appearance="subtle" size="small" onClick={() => openEdit(i)} /></Tooltip>
-            <Tooltip content="Excluir" relationship="label"><Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (!confirm('Excluir?')) return; await deleteEndereco(i.id); load(); }} /></Tooltip>
+            <Tooltip content="Excluir" relationship="label"><Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (!(await confirmar('Deseja excluir este endereço?'))) return; await deleteEndereco(i.id); load(); }} /></Tooltip>
           </div>
         </TableCellLayout>
       ),
@@ -104,27 +89,18 @@ export default function Enderecos() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="📍 Endereços das Escolas"
-        actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="endereços"
-              requiredColumns={['escola', 'logradouro', 'cidade', 'estado']}
-              onImportRow={importEndereco}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Endereço</Button>
-          </>
-        )}
+        icon={<Location24Regular />}
+        title="Endereços das Escolas"
+        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Endereço</Button>}
       />
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={enderecos} columns={columns} resizableColumns>
+          <DataGrid items={enderecos} columns={columns} sortable resizableColumns>
             <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
             <DataGridBody<EnderecoEscola>>{({ item, rowId }) => <DataGridRow<EnderecoEscola> key={rowId}>{({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}</DataGridRow>}</DataGridBody>
           </DataGrid>
-          {enderecos.length === 0 && <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>Nenhum endereço cadastrado.</div>}
+          {enderecos.length === 0 && <EmptyState message="Nenhum endereço cadastrado." />}
         </div>
       )}
       <AppDialog open={modal} title={editId ? 'Editar Endereço' : 'Novo Endereço'} onClose={closeModal}>
@@ -147,6 +123,7 @@ export default function Enderecos() {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

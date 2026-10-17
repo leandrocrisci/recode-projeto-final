@@ -1,0 +1,36 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="modelo-dados" name="Modelo de dados">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Modelo de dados — relacionamentos JPA" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=22;fontStyle=1;fontColor=#1e3a5f;" vertex="1" parent="1"><mxGeometry x="30" y="20" width="1140" height="40" as="geometry"/></mxCell>
+        <mxCell id="Escola" value="Escola" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="30" y="270" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="EnderecoEscola" value="EnderecoEscola" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1"><mxGeometry x="30" y="100" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Curso" value="Curso" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="260" y="270" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Aluno" value="Aluno" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="500" y="120" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Professor" value="Professor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="500" y="270" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="AvaliacaoQualidade" value="AvaliacaoQualidade" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1"><mxGeometry x="260" y="430" width="170" height="56" as="geometry"/></mxCell>
+        <mxCell id="AvaliacaoCurso" value="AvaliacaoCurso" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1"><mxGeometry x="500" y="430" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Matricula" value="Matricula" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1"><mxGeometry x="740" y="120" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="ProgressoAluno" value="ProgressoAluno" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1"><mxGeometry x="740" y="270" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Produto" value="Produto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="980" y="120" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="Pedido" value="Pedido" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="980" y="350" width="150" height="56" as="geometry"/></mxCell>
+        <mxCell id="r1" value="1 : 1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="EnderecoEscola"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r2" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="Curso"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r3" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="Aluno"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r4" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="Professor"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r5" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="AvaliacaoQualidade"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r6" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;endArrow=block;endFill=1;" edge="1" parent="1" source="Curso" target="Aluno"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r7" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;endArrow=block;endFill=1;" edge="1" parent="1" source="Curso" target="AvaliacaoCurso"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r8" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;endArrow=block;endFill=1;" edge="1" parent="1" source="Aluno" target="Matricula"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r9" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;endArrow=block;endFill=1;" edge="1" parent="1" source="Curso" target="Matricula"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r10" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;endArrow=block;endFill=1;" edge="1" parent="1" source="Aluno" target="ProgressoAluno"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r11" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;endArrow=block;endFill=1;" edge="1" parent="1" source="Curso" target="ProgressoAluno"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r12" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Escola" target="Pedido"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r13" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Professor" target="Pedido"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="r14" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;endArrow=block;endFill=1;" edge="1" parent="1" source="Produto" target="Pedido"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="note" value="Seta aponta para a entidade dependente (lado N), exceto EnderecoEscola que é 1:1 com Escola." style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontColor=#555;" vertex="1" parent="1"><mxGeometry x="90" y="570" width="1050" height="40" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

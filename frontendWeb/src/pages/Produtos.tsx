@@ -9,13 +9,14 @@ import {
   Add24Regular, Edit24Regular, Delete24Regular, Box24Regular, Grid24Regular, 
   Table24Regular, Cart24Regular, Search24Regular,
   DocumentText24Regular, Pen24Regular, Eraser24Regular, Wrench24Regular, 
-  Ruler24Regular, Cut24Regular, Backpack24Regular, Folder24Regular, Calculator24Regular,
-  ArrowUpload24Regular
+  Ruler24Regular, Cut24Regular, Backpack24Regular, Folder24Regular, Calculator24Regular
 } from '@fluentui/react-icons';
 import { getProdutos, createProduto, updateProduto, deleteProduto, getEscolas, getProfessores, createPedido } from '../services/api';
 import type { Produto, Escola, Professor } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
 
@@ -40,72 +41,14 @@ const useStyles = makeStyles({
 
 const emptyForm = { nome: '', descricao: '', preco: '', quantidade: '0', icone: '' };
 const emptyPedido = { escolaId: '', professorId: '', quantidade: '1' };
-
-type ProdutoImportado = {
-  nome: string;
-  descricao: string;
-  preco: number;
-  quantidade: number;
-  icone: string;
-  categoria: string;
-};
-
-const parseCsv = (csv: string): string[][] => {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  let quoted = false;
-
-  for (let i = 0; i < csv.length; i++) {
-    const char = csv[i];
-    if (char === '"') {
-      if (quoted && csv[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else {
-        quoted = !quoted;
-      }
-    } else if (char === ',' && !quoted) {
-      row.push(cell);
-      cell = '';
-    } else if ((char === '\n' || char === '\r') && !quoted) {
-      if (char === '\r' && csv[i + 1] === '\n') i++;
-      row.push(cell);
-      if (row.some(value => value.trim())) rows.push(row);
-      row = [];
-      cell = '';
-    } else {
-      cell += char;
-    }
-  }
-
-  if (quoted) throw new Error('A planilha contém aspas não fechadas em uma célula.');
-  if (cell || row.length) {
-    row.push(cell);
-    if (row.some(value => value.trim())) rows.push(row);
-  }
-  return rows;
-};
-
-const normalizarCabecalho = (value: string) =>
-  value.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-const parseNumeroPlanilha = (value: string) => {
-  const normalized = value.trim().replace(/\s/g, '').replace(/^R\$/i, '');
-  const localized = normalized.includes(',')
-    ? normalized.replace(/\./g, '').replace(',', '.')
-    : normalized;
-  return Number(localized);
-};
-
 export default function Produtos() {
   const s = useStyles(), fs = useFormStyles(), { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
   const [produtos, setProdutos] = useState<Produto[]>([]), [escolas, setEscolas] = useState<Escola[]>([]), [professores, setProfessores] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [view, setView] = useState<'vitrine'|'estoque'>('vitrine'), [busca, setBusca] = useState('');
   const [modal, setModal] = useState(false), [form, setForm] = useState(emptyForm), [editId, setEditId] = useState<number | null>(null), [saving, setSaving] = useState(false);
   const [pModal, setPModal] = useState(false), [pProd, setPProd] = useState<Produto | null>(null), [pForm, setPForm] = useState(emptyPedido), [pSaving, setPSaving] = useState(false), [pSuccess, setPSuccess] = useState(false);
   const [impModal, setImpModal] = useState(false), [sheetUrl, setSheetUrl] = useState(''), [impLoading, setImpLoading] = useState(false), [impSuccess, setImpSuccess] = useState('');
-  const [sheetProducts, setSheetProducts] = useState<ProdutoImportado[]>([]);
 
   const filtrados = useMemo(() => produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()) || (p.descricao ?? '').toLowerCase().includes(busca.toLowerCase())), [produtos, busca]);
   const fmtPreco = (v: number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -135,118 +78,67 @@ export default function Produtos() {
       setModal(false); load(); 
     } catch { setError('Erro ao salvar produto.'); } finally { setSaving(false); }
   };
-  const handleReadSheet = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setError('');
-    setImpSuccess('');
-    setSheetProducts([]);
-
-    let sheetId: string;
-    let gid: string;
-    try {
-      const url = new URL(sheetUrl);
-      const match = url.pathname.match(/^\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-      if (url.hostname !== 'docs.google.com' || !match) {
-        throw new Error('Informe um link válido do Google Sheets.');
-      }
-      sheetId = match[1];
-      gid = url.searchParams.get('gid') ?? '0';
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'URL da planilha inválida.');
-      return;
-    }
-
+    const handleImportSheet = async (ev: React.FormEvent) => {
+    ev.preventDefault(); setError(''); setImpSuccess('');
+    const matches = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!matches) return setError('URL da planilha inválida.');
+    
+    const sheetId = matches[1]; // Captura estritamente o ID isolado do array
     setImpLoading(true);
+
     try {
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${encodeURIComponent(gid)}`;
-      const response = await fetch(csvUrl, { credentials: 'omit' });
-      if (!response.ok) {
-        throw new Error('Não foi possível acessar a planilha. Verifique se ela está compartilhada como "Qualquer pessoa com o link".');
-      }
-
-      const csv = (await response.text()).replace(/^\uFEFF/, '');
-      if (/^\s*<!doctype html|^\s*<html/i.test(csv)) {
-        throw new Error('O Google retornou uma página HTML. Verifique se o link está público e se aponta para uma planilha.');
-      }
-      const rows = parseCsv(csv);
-      if (rows.length < 2) throw new Error('A planilha está vazia ou contém apenas o cabeçalho.');
-
-      const headers = rows[0].map(normalizarCabecalho);
-      const nameIndex = headers.indexOf('nome');
-      const descriptionIndex = headers.indexOf('descricao');
-      const priceIndex = headers.indexOf('preco');
-      const quantityIndex = headers.indexOf('quantidade');
-      const iconIndex = headers.indexOf('icone');
-      if (nameIndex < 0 || priceIndex < 0) {
-        throw new Error('A primeira linha precisa conter as colunas obrigatórias "nome" e "preco".');
-      }
-
-      const parsed = rows.slice(1).map((row, index): ProdutoImportado => {
-        const nome = (row[nameIndex] ?? '').trim();
-        const rawPrice = (row[priceIndex] ?? '').trim();
-        const preco = parseNumeroPlanilha(rawPrice);
-        const rawQuantity = quantityIndex >= 0 ? (row[quantityIndex] ?? '').trim() : '';
-        const quantidade = rawQuantity ? parseNumeroPlanilha(rawQuantity) : 0;
-
-        if (!nome) throw new Error(`O nome do produto está vazio na linha ${index + 2}.`);
-        if (!rawPrice || !Number.isFinite(preco) || preco < 0) {
-          throw new Error(`Preço inválido na linha ${index + 2}. Use um número igual ou maior que zero.`);
-        }
-        if (!Number.isInteger(quantidade) || quantidade < 0) {
-          throw new Error(`Quantidade inválida na linha ${index + 2}. Use um número inteiro igual ou maior que zero.`);
-        }
-
-        const rawIcon = iconIndex >= 0 ? (row[iconIndex] ?? '').trim().toLowerCase() : '';
-        return {
-          nome,
-          descricao: descriptionIndex >= 0 ? (row[descriptionIndex] ?? '').trim() : '',
-          preco,
-          quantidade,
-          icone: ICON_MAP[rawIcon] ? rawIcon : 'caixa',
-          categoria: 'material_didatico',
-        };
+      // Altere a linha 77 do seu arquivo para:
+        const urlCompleta = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+      
+      // CORREÇÃO: Adicionado opções de CORS e omissão de credenciais
+      const res = await fetch(urlCompleta, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit'
       });
-      setSheetProducts(parsed);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao ler a planilha.');
-    } finally {
-      setImpLoading(false);
-    }
-  };
+      
+      if (!res.ok) throw new Error('Não foi possível ler a planilha pública. Verifique se o link está aberto para "Qualquer pessoa com o link".');
+      
+      const text = await res.text();
+      const linhas = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+      if (linhas.length <= 1) throw new Error('Planilha vazia ou sem cabeçalhos válidos.');
 
-  const handleImportSheet = async () => {
-    setError('');
-    setImpSuccess('');
-    setImpLoading(true);
-    let imported = 0;
-    try {
-      for (const product of sheetProducts) {
-        await createProduto(product);
-        imported++;
+      const cab = linhas[0].split(',').map(c => c.replace(/"/g, '').trim().toLowerCase());
+      const iNome = cab.indexOf('nome'), iDesc = cab.indexOf('descricao'), iPreco = cab.indexOf('preco'), iQtd = cab.indexOf('quantidade'), iIcon = cab.indexOf('icone');
+
+      if (iNome === -1 || iPreco === -1) throw new Error('Colunas obrigatórias "nome" ou "preco" ausentes na primeira linha.');
+
+      let cadastrados = 0;
+      for (let i = 1; i < linhas.length; i++) {
+        const col = linhas[i].split(',').map(v => v.replace(/"/g, '').trim());
+        if (!col[iNome]) continue;
+
+        const rawIcon = iIcon !== -1 ? col[iIcon].toLowerCase() : 'caixa';
+
+        await createProduto({
+          nome: col[iNome],
+          descricao: iDesc !== -1 ? col[iDesc] : '',
+          preco: Number(col[iPreco]) || 0,
+          quantidade: iQtd !== -1 ? Number(col[iQtd]) || 0 : 0,
+          icone: ICON_MAP[rawIcon] ? rawIcon : 'caixa',
+          categoria: 'material_didatico'
+        });
+        cadastrados++;
       }
-      setImpSuccess(`${imported} produto(s) importado(s) com sucesso.`);
-      setSheetUrl('');
-      setSheetProducts([]);
-      load();
-      setTimeout(() => setImpModal(false), 1500);
-    } catch (err) {
-      if (imported > 0) load();
-      setError(err instanceof Error
-        ? `Falha ao importar após ${imported} de ${sheetProducts.length} produto(s): ${err.message}`
-        : `Falha ao importar após ${imported} de ${sheetProducts.length} produto(s).`);
-    } finally {
-      setImpLoading(false);
-    }
+
+      setImpSuccess(cadastrados + " produtos importados!");
+      setSheetUrl(''); load(); setTimeout(() => setImpModal(false), 1500);
+    } catch (err: any) { setError(err.message || 'Erro na importação.'); } finally { setImpLoading(false); }
   };
 
   const columns = [
-    createTableColumn<Produto>({ columnId: 'nome', renderHeaderCell: () => 'Nome', renderCell: i => <TableCellLayout media={renderIcon(i.icone)}>{i.nome}</TableCellLayout> }),
-    createTableColumn<Produto>({ columnId: 'preco', renderHeaderCell: () => 'Preço', renderCell: i => <TableCellLayout>{fmtPreco(i.preco)}</TableCellLayout> }),
-    createTableColumn<Produto>({ columnId: 'qtd', renderHeaderCell: () => 'Estoque', renderCell: i => <TableCellLayout><Badge appearance="filled" color={i.quantidade > 0 ? 'success' : 'danger'}>{i.quantidade} un.</Badge></TableCellLayout> }),
+    createTableColumn<Produto>({ columnId: 'nome', compare: (a, b) => cmpTexto(a.nome, b.nome), renderHeaderCell: () => 'Nome', renderCell: i => <TableCellLayout media={renderIcon(i.icone)}>{i.nome}</TableCellLayout> }),
+    createTableColumn<Produto>({ columnId: 'preco', compare: (a, b) => cmpNumero(a.preco, b.preco), renderHeaderCell: () => 'Preço', renderCell: i => <TableCellLayout>{fmtPreco(i.preco)}</TableCellLayout> }),
+    createTableColumn<Produto>({ columnId: 'qtd', compare: (a, b) => cmpNumero(a.quantidade, b.quantidade), renderHeaderCell: () => 'Estoque', renderCell: i => <TableCellLayout><Badge appearance="filled" color={i.quantidade > 0 ? 'success' : 'danger'}>{i.quantidade} un.</Badge></TableCellLayout> }),
     createTableColumn<Produto>({ columnId: 'acoes', renderHeaderCell: () => 'Ações', renderCell: i => isAdmin && (
       <TableCellLayout><div style={{ display: 'flex', gap: '6px' }}>
         <Button icon={<Edit24Regular />} appearance="subtle" size="small" onClick={() => { setForm({ nome: i.nome, descricao: i.descricao ?? '', preco: String(i.preco), quantidade: String(i.quantidade), icone: i.icone ?? '' }); setEditId(i.id); setModal(true); }} />
-        <Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (confirm('Excluir produto?')) { await deleteProduto(i.id); load(); } }} />
+        <Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (await confirmar('Deseja excluir este produto?')) { await deleteProduto(i.id); load(); } }} />
       </div></TableCellLayout>
     ) }),
   ];
@@ -254,13 +146,14 @@ export default function Produtos() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="📦 Produtos"
+        icon={<Box24Regular />}
+        title="Produtos"
         subtitle="Catálogo de materiais escolares"
         actions={isAdmin && (
           <>
             <Button icon={<Grid24Regular />} appearance={view === 'vitrine' ? 'primary' : 'outline'} onClick={() => setView('vitrine')} />
             <Button icon={<Table24Regular />} appearance={view === 'estoque' ? 'primary' : 'outline'} onClick={() => setView('estoque')} />
-            <Button icon={<ArrowUpload24Regular />} onClick={() => { setError(''); setImpSuccess(''); setSheetProducts([]); setSheetUrl(''); setImpModal(true); }}>Importar da Planilha</Button>
+            {/* <Button icon={<ArrowUpload24Regular />} onClick={() => { setError(''); setImpSuccess(''); setSheetUrl(''); setImpModal(true); }}>Importar da Planilha</Button> */}
             <Button appearance="primary" icon={<Add24Regular />} onClick={() => { setForm(emptyForm); setEditId(null); setModal(true); }}>Novo</Button>
           </>
         )}
@@ -288,7 +181,7 @@ export default function Produtos() {
         </div>
       ) : (
         <div className={s.tableWrap}>
-          <DataGrid items={filtrados} columns={columns}>
+          <DataGrid items={filtrados} columns={columns} sortable>
             <DataGridHeader />
             <DataGridBody<Produto>>{({ item }) => <DataGridRow<Produto>>{({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}</DataGridRow>}</DataGridBody>
           </DataGrid>
@@ -326,48 +219,22 @@ export default function Produtos() {
       </AppDialog>
 
       {/* Modal: Importar */}
-      <AppDialog open={impModal} title="Importar Planilha do Google Sheets" onClose={() => { if (!impLoading) setImpModal(false); }}>
+      <AppDialog open={impModal} title="Importar Planilha do Google Sheets" onClose={() => setImpModal(false)}>
         {error && <MessageBar intent="error" style={{ marginBottom: '12px' }}><MessageBarBody>{error}</MessageBarBody></MessageBar>}
         {impSuccess && <MessageBar intent="success" style={{ marginBottom: '12px' }}><MessageBarBody>{impSuccess}</MessageBarBody></MessageBar>}
-        <form onSubmit={handleReadSheet} className={fs.formGrid}>
-          <Field label="Link da planilha do Google *" style={{ gridColumn: '1/-1' }}>
-            <Input required type="url" placeholder="Cole o link da planilha (incluindo gid da aba)" value={sheetUrl} onChange={e => { setSheetUrl(e.target.value); setSheetProducts([]); setImpSuccess(''); }} disabled={impLoading} />
+        <form onSubmit={handleImportSheet} className={fs.formGrid}>
+          <Field label="Link da Planilha do Google *" style={{ gridColumn: '1/-1' }} validationMessage="A planilha deve conter exatamente as colunas: nome, descricao, preco, quantidade, icone">
+            <Input required type="url" placeholder="https://google.com" value={sheetUrl} onChange={e => setSheetUrl(e.target.value)} disabled={impLoading} />
           </Field>
-          <Text size={200} style={{ gridColumn: '1/-1' }}>
-            A planilha deve estar compartilhada com acesso de leitura por link. Colunas: nome e preco (obrigatórias); descricao, quantidade e icone (opcionais). O gid do link seleciona a aba.
-          </Text>
           <div className={fs.actions} style={{ gridColumn: '1/-1', marginTop: '20px' }}>
-            <Button appearance="secondary" type="button" onClick={() => setImpModal(false)} disabled={impLoading}>Sair</Button>
+            <Button appearance="secondary" onClick={() => setImpModal(false)} disabled={impLoading}>Sair</Button>
             <Button appearance="primary" type="submit" disabled={impLoading || !sheetUrl}>
-              {impLoading ? <Spinner size="tiny" label="Lendo planilha..." /> : 'Ler planilha'}
+              {impLoading ? <Spinner size="tiny" label="Efetuando carga em lote..." /> : 'Iniciar Importação'}
             </Button>
           </div>
-          {sheetProducts.length > 0 && (
-            <>
-              <MessageBar intent="success" style={{ gridColumn: '1/-1' }}>
-                <MessageBarBody>{sheetProducts.length} produto(s) encontrados. Confira a prévia antes de importar.</MessageBarBody>
-              </MessageBar>
-              <div style={{ gridColumn: '1/-1', maxHeight: '280px', overflow: 'auto' }}>
-                <DataGrid items={sheetProducts.slice(0, 10)} columns={[
-                  createTableColumn<ProdutoImportado>({ columnId: 'nome', renderHeaderCell: () => 'Nome', renderCell: item => item.nome }),
-                  createTableColumn<ProdutoImportado>({ columnId: 'preco', renderHeaderCell: () => 'Preço', renderCell: item => fmtPreco(item.preco) }),
-                  createTableColumn<ProdutoImportado>({ columnId: 'quantidade', renderHeaderCell: () => 'Estoque', renderCell: item => item.quantidade }),
-                  createTableColumn<ProdutoImportado>({ columnId: 'descricao', renderHeaderCell: () => 'Descrição', renderCell: item => item.descricao }),
-                ]}>
-                  <DataGridHeader />
-                  <DataGridBody<ProdutoImportado>>{({ item }) => <DataGridRow<ProdutoImportado>>{({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}</DataGridRow>}</DataGridBody>
-                </DataGrid>
-                {sheetProducts.length > 10 && <Text size={200}>Exibindo os 10 primeiros de {sheetProducts.length} produtos.</Text>}
-              </div>
-              <div className={fs.actions} style={{ gridColumn: '1/-1' }}>
-                <Button appearance="primary" type="button" onClick={handleImportSheet} disabled={impLoading}>
-                  {impLoading ? <Spinner size="tiny" label="Importando produtos..." /> : `Importar ${sheetProducts.length} produto(s)`}
-                </Button>
-              </div>
-            </>
-          )}
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }

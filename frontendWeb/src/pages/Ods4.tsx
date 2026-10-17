@@ -1,167 +1,540 @@
-
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge, Title1, Title2, Title3, Body1,
-  Card, CardHeader, Divider,
+  makeStyles, tokens, Text, Badge, Button, Link, Title1, Title2, Title3, Body1, Tab, TabList,
 } from '@fluentui/react-components';
-import { Globe24Regular } from '@fluentui/react-icons';
+import {
+  Globe24Regular, People24Regular, DataTrending24Regular, BookOpen24Regular, PersonBoard24Regular,
+  DocumentBulletList24Regular, Location24Regular, ClipboardTaskAdd24Regular, Building24Regular,
+} from '@fluentui/react-icons';
+import { KpiCard } from '../components/KpiCard';
+import { ChartCard } from '../components/ChartCard';
+import { HBarChart } from '../components/charts/HBarChart';
+import { ColumnChart } from '../components/charts/ColumnChart';
+import { RingChart } from '../components/charts/RingChart';
+import {
+  FONTES, foraDaEscolaPopulacao, foraDaEscolaPorEtapa, conclusaoPorEtapa, alfabetizacao, competenciasDigitais,
+  analfabetismoRegioes, analfabetismoPerfil, medioAdequado, motivosAbandono,
+  metas, termos, linhaDoTempo, desafios, estrategias,
+} from '../data/ods4';
+import type { Meta } from '../data/ods4';
+
+type TabId = 'visao' | 'global' | 'brasil' | 'metas' | 'caminhos';
 
 const useStyles = makeStyles({
-  page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '900px' },
+  page: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+    width: '100%',
+    maxWidth: '1120px',
+    margin: '0 auto',
+    padding: '24px',
+    boxSizing: 'border-box',
+  },
+
+  // Hero
   hero: {
-    display: 'flex', alignItems: 'center', gap: '16px',
-    padding: '24px', borderRadius: tokens.borderRadiusLarge,
+    position: 'relative',
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '24px',
+    padding: '32px',
+    borderRadius: tokens.borderRadiusXLarge,
     background: `linear-gradient(135deg, ${tokens.colorBrandBackground}, ${tokens.colorBrandBackgroundHover})`,
     color: tokens.colorNeutralForegroundOnBrand,
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      right: '-90px',
+      top: '-90px',
+      width: '280px',
+      height: '280px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      pointerEvents: 'none',
+    },
   },
-  heroText: { display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 },
-  heroTag:  { flexShrink: 0, whiteSpace: 'nowrap' },
-  heroBadge: {
-    width: '56px', height: '56px', borderRadius: tokens.borderRadiusLarge,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '24px', fontWeight: '800', color: '#fff', flexShrink: 0,
+  heroMark: {
+    width: '88px',
+    height: '88px',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: tokens.borderRadiusXLarge,
+    backgroundColor: '#C5192D', // vermelho associado ao ODS 4
+    color: '#fff',
+    fontSize: '52px',
+    fontWeight: 800,
+    boxShadow: tokens.shadow8,
   },
-  section: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' },
-  metaRow: { display: 'grid', gridTemplateColumns: '60px 1fr 1fr', gap: '12px', alignItems: 'start' },
-  estrategiaRow: {
-    display: 'flex', gap: '16px', alignItems: 'flex-start',
-    padding: '12px 16px', borderRadius: tokens.borderRadiusMedium,
+  heroBody: { display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, minWidth: '260px', zIndex: 1 },
+  heroKicker: { color: 'rgba(255,255,255,0.85)' },
+  heroLead: { color: 'rgba(255,255,255,0.92)', maxWidth: '62ch' },
+  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  chip: {
+    padding: '2px 10px',
+    borderRadius: '999px',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    fontSize: tokens.fontSizeBase200,
+  },
+  heroActions: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' },
+  heroBtn: {
+    color: '#fff',
+    ':hover': { color: '#fff', backgroundColor: 'rgba(255,255,255,0.16)' },
+    ':hover:active': { color: '#fff', backgroundColor: 'rgba(255,255,255,0.24)' },
+  },
+
+  // Blocos
+  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' },
+  tabsWrap: { overflowX: 'auto', borderBottom: `1px solid ${tokens.colorNeutralStroke2}` },
+  panel: { display: 'flex', flexDirection: 'column', gap: '20px' },
+  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '16px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))', gap: '12px' },
+  sectionHead: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  muted: { color: tokens.colorNeutralForeground3 },
+  rings: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', gap: '24px' },
+  callout: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    padding: '14px 18px',
+    backgroundColor: tokens.colorBrandBackground2,
+    borderLeft: `4px solid ${tokens.colorBrandBackground}`,
+    borderRadius: tokens.borderRadiusMedium,
+  },
+  calloutActions: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+
+  // Cartões de conteúdo
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    padding: '16px 18px',
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusXLarge,
+    boxShadow: tokens.shadow2,
+  },
+  cardHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' },
+  cardTitle: { fontWeight: tokens.fontWeightSemibold },
+  dado: {
+    marginTop: 'auto',
+    padding: '10px 12px',
+    borderRadius: tokens.borderRadiusMedium,
     backgroundColor: tokens.colorNeutralBackground2,
   },
+  iconBubble: {
+    width: '40px',
+    height: '40px',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: tokens.borderRadiusLarge,
+    backgroundColor: tokens.colorBrandBackground2,
+    color: tokens.colorBrandForeground1,
+  },
+  rowWithIcon: { display: 'flex', alignItems: 'flex-start', gap: '14px' },
+  timeline: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '12px' },
+  step: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    paddingTop: '12px',
+    borderTop: `3px solid ${tokens.colorBrandBackground}`,
+  },
+  stepFuture: { borderTopStyle: 'dashed' },
+  year: { color: tokens.colorBrandForeground1, fontWeight: tokens.fontWeightBold },
   numCircle: {
-    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+    width: '36px',
+    height: '36px',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
     backgroundColor: tokens.colorBrandBackground,
     color: tokens.colorNeutralForegroundOnBrand,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontWeight: '700', fontSize: '16px',
+    fontWeight: tokens.fontWeightBold,
   },
+  estrategia: {
+    display: 'flex',
+    gap: '14px',
+    alignItems: 'flex-start',
+    padding: '14px 16px',
+    borderRadius: tokens.borderRadiusLarge,
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  sources: { display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: `1px solid ${tokens.colorNeutralStroke2}` },
 });
 
-const metas = [
-  { id: '4.1', global: 'Ensino primário e secundário gratuito, equitativo e de qualidade.', brasil: 'Ensino fundamental e médio na idade adequada na rede pública.' },
-  { id: '4.2', global: 'Desenvolvimento na primeira infância e pré-escola.', brasil: 'Atendimento integral na educação infantil.' },
-  { id: '4.3', global: 'Acesso igualitário à educação técnica, profissional e superior.', brasil: 'Equidade no acesso e permanência no ensino superior e profissional.' },
-  { id: '4.4', global: 'Aumento de competências para emprego e empreendedorismo.', brasil: 'Desenvolvimento de habilidades técnicas necessárias ao mercado de trabalho.' },
-  { id: '4.5', global: 'Eliminação de disparidades de gênero e inclusão de vulneráveis.', brasil: 'Combate a desigualdades de gênero, raça e apoio a grupos historicamente marginalizados.' },
-  { id: '4.6', global: 'Alfabetização e suficiência em cálculo para jovens e adultos.', brasil: 'Ampliação de competências de leitura, escrita e matemática básica.' },
-  { id: '4.7', global: 'Educação voltada para o desenvolvimento sustentável e direitos humanos.', brasil: 'Integração da cidadania global e direitos humanos nos currículos escolares.' },
-  { id: '4.a', global: 'Construção e melhoria de instalações físicas escolares seguras e inclusivas.', brasil: 'Garantia de infraestrutura adequada, com acessibilidade, água e saneamento.' },
-  { id: '4.b', global: 'Expansão de bolsas de estudo para países em desenvolvimento.', brasil: 'Ampliação de vagas em programas de intercâmbio e cooperação internacional.' },
-  { id: '4.c', global: 'Aumento do contingente de professores qualificados.', brasil: 'Foco na formação inicial, continuada e valorização salarial docente.' },
-];
+const ICONES_DESAFIO: Record<string, ReactNode> = {
+  infra: <Building24Regular />,
+  aprendizado: <BookOpen24Regular />,
+  docentes: <PersonBoard24Regular />,
+  equidade: <People24Regular />,
+};
 
-const desafios = [
-  { icon: '🏗️', titulo: 'Infraestrutura Básica', texto: 'Países em desenvolvimento e regiões periféricas sofrem com a falta de saneamento, internet e laboratórios.' },
-  { icon: '📉', titulo: 'Defasagem de Aprendizado', texto: 'Milhões de crianças completam os ciclos sem domínio adequado de leitura e matemática básica.' },
-  { icon: '👩‍🏫', titulo: 'Valorização Docente', texto: 'A escassez de professores qualificados e baixa remuneração desestimulam a carreira docente.' },
-];
+function SectionHead({ title, subtitle }: { title: string; subtitle?: string }) {
+  const s = useStyles();
+  return (
+    <div className={s.sectionHead}>
+      <Title2 as="h2">{title}</Title2>
+      {subtitle && <Text size={300} className={s.muted}>{subtitle}</Text>}
+    </div>
+  );
+}
 
-const estrategias = [
-  { num: '1', titulo: 'Priorização Orçamentária', texto: 'Tratar o financiamento educacional como investimento estratégico nacional de longo prazo.' },
-  { num: '2', titulo: 'Formação Continuada', texto: 'Apoiar educadores com capacitação focada em ferramentas digitais e metodologias ativas.' },
-  { num: '3', titulo: 'Inclusão e Diversidade', texto: 'Criar políticas ativas de permanência para meninas, povos indígenas, quilombolas e PcD.' },
-];
+function MetaCard({ meta }: { meta: Meta }) {
+  const s = useStyles();
+  return (
+    <article className={s.card}>
+      <div className={s.cardHead}>
+        <Badge appearance="filled" color="brand" size="large">{meta.id}</Badge>
+        <Text size={200} className={s.muted}>Prazo: {meta.prazo}</Text>
+      </div>
+      <Text className={s.cardTitle}>{meta.titulo}</Text>
+      <Text size={200} className={s.muted}>No Brasil: {meta.brasil}</Text>
+      <div className={s.dado}>
+        <Text size={200}><b>Dado recente.</b> {meta.dado}</Text>
+      </div>
+    </article>
+  );
+}
 
 export default function Ods4() {
   const s = useStyles();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<TabId>('visao');
+
+  const metasResultado = metas.filter(m => m.grupo === 'resultado');
+  const metasMeios = metas.filter(m => m.grupo === 'meios');
 
   return (
     <div className={s.page}>
-      {/* Hero */}
-      <div className={s.hero}>
-        <div className={s.heroBadge}><Globe24Regular style={{ fontSize: '28px' }} /></div>
-        <div className={s.heroText}>
-          <Title1 style={{ color: '#fff' }}>Educação de Qualidade</Title1>
-          <Text style={{ color: 'rgba(255,255,255,0.85)' }}>ODS 4 · Agenda 2030 · Organização das Nações Unidas</Text>
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <header className={s.hero}>
+        <div className={s.heroMark} aria-hidden="true">4</div>
+        <div className={s.heroBody}>
+          <Text size={200} className={s.heroKicker}>Objetivo de Desenvolvimento Sustentável 4 · Agenda 2030 da ONU</Text>
+          <Title1 as="h1" style={{ color: '#fff' }}>Educação de Qualidade</Title1>
+          <Body1 className={s.heroLead}>
+            Assegurar a educação inclusiva, equitativa e de qualidade, e promover oportunidades de
+            aprendizagem ao longo da vida para todos.
+          </Body1>
+          <div className={s.chips}>
+            <span className={s.chip}>10 metas</span>
+            <span className={s.chip}>Prazo: 2030</span>
+            <span className={s.chip}>Dados de 2024 e 2025</span>
+          </div>
+          <div className={s.heroActions}>
+            <Button appearance="outline" className={s.heroBtn} icon={<DataTrending24Regular />} onClick={() => setTab('global')}>
+              Dados globais
+            </Button>
+            <Button appearance="outline" className={s.heroBtn} icon={<Location24Regular />} onClick={() => setTab('brasil')}>
+              Dados do Brasil
+            </Button>
+          </div>
         </div>
-        <Badge appearance="filled" color="informative" size="large" className={s.heroTag}>ODS 4</Badge>
+      </header>
+
+      {/* ── Indicadores-chave ────────────────────────────────────────────── */}
+      <div className={s.kpiGrid}>
+        <KpiCard icon={<People24Regular />} label="Fora da escola (2024)" value="273 mi" hint="cerca de 1 em cada 6 em idade escolar" tone="danger" />
+        <KpiCard icon={<DataTrending24Regular />} label="Conclusão do ensino médio" value="61%" hint="eram 37% em 2000" tone="brand" />
+        <KpiCard icon={<BookOpen24Regular />} label="Proficiência mínima em leitura" value="58%" hint="fim do primário, estimativa de 2019" tone="warning" />
+        <KpiCard icon={<PersonBoard24Regular />} label="Professores sem qualificação mínima" value="~1 em 5" hint="18% a 21% em 2024" tone="warning" />
+        <KpiCard icon={<DocumentBulletList24Regular />} label="Alfabetização de adultos" value="88%" hint="eram 86% em 2015" tone="success" />
       </div>
 
-      {/* Introdução */}
-      <div className={s.section}>
-        <Title2>1. Introdução</Title2>
-        <Divider />
-        <Body1>
-          O <strong>Objetivo de Desenvolvimento Sustentável 4 (ODS 4)</strong> integra a Agenda 2030 da ONU.
-          Sua missão consiste em <strong>assegurar a educação inclusiva, equitativa e de qualidade,
-          promovendo oportunidades de aprendizagem ao longo da vida para todos.</strong>
-        </Body1>
-        <Body1>
-          Diferente das metas anteriores do milênio, que focavam na taxa de matrícula,
-          o ODS 4 reconhece que o acesso não basta: é fundamental garantir a retenção,
-          o aprendizado prático e ambientes escolares adequados.
-        </Body1>
+      {/* ── Abas ─────────────────────────────────────────────────────────── */}
+      <div className={s.tabsWrap}>
+        <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as TabId)} size="large">
+          <Tab value="visao" icon={<Globe24Regular />}>Visão geral</Tab>
+          <Tab value="global" icon={<DataTrending24Regular />}>Cenário global</Tab>
+          <Tab value="brasil" icon={<Location24Regular />}>Brasil</Tab>
+          <Tab value="metas" icon={<DocumentBulletList24Regular />}>Metas</Tab>
+          <Tab value="caminhos" icon={<ClipboardTaskAdd24Regular />}>Desafios e caminhos</Tab>
+        </TabList>
       </div>
 
-      {/* Metas */}
-      <div className={s.section}>
-        <Title2>2. Metas Principais</Title2>
-        <Divider />
-        <Text style={{ color: tokens.colorNeutralForeground2 }}>
-          O ODS 4 desdobra-se em <strong>dez metas</strong> que abrangem da primeira infância ao ensino superior.
-        </Text>
-        <Card>
-          {metas.map((m, idx) => (
-            <div key={m.id}>
-              {idx > 0 && <Divider style={{ margin: '0' }} />}
-              <div className={s.metaRow} style={{ padding: '10px 16px' }}>
-                <Badge appearance="filled" color="brand">{m.id}</Badge>
-                <Text size={200}>{m.global}</Text>
-                <Text size={200} style={{ color: tokens.colorNeutralForeground2 }}>{m.brasil}</Text>
+      {/* ── Visão geral ──────────────────────────────────────────────────── */}
+      {tab === 'visao' && (
+        <div className={s.panel}>
+          <SectionHead title="O que o ODS 4 propõe" />
+          <Body1>
+            O <strong>ODS 4</strong> integra a Agenda 2030 da ONU. Diferente das metas anteriores do milênio, que
+            miravam sobretudo a taxa de matrícula, ele reconhece que o acesso não basta: é fundamental garantir a
+            permanência, a conclusão, o aprendizado de fato e ambientes escolares adequados.
+          </Body1>
+          <div className={s.grid2}>
+            {termos.map(t => (
+              <article key={t.termo} className={s.card}>
+                <Text size={400} className={s.cardTitle}>{t.termo}</Text>
+                <Text size={300} className={s.muted}>{t.texto}</Text>
+              </article>
+            ))}
+          </div>
+
+          <SectionHead
+            title="Da universalização do acesso à conclusão"
+            subtitle="Como as agendas globais de educação elevaram a ambição, até chegar ao prazo de 2030."
+          />
+          <div className={s.timeline}>
+            {linhaDoTempo.map((p, i) => (
+              <div key={p.ano} className={`${s.step}${i === linhaDoTempo.length - 1 ? ' ' + s.stepFuture : ''}`}>
+                <Title3 className={s.year}>{p.ano}</Title3>
+                <Text className={s.cardTitle}>{p.titulo}</Text>
+                <Text size={200} className={s.muted}>{p.texto}</Text>
               </div>
-            </div>
-          ))}
-        </Card>
-      </div>
+            ))}
+          </div>
 
-      {/* Desafios */}
-      <div className={s.section}>
-        <Title2>3. Desafios para a Implementação</Title2>
-        <Divider />
-        <div className={s.cardGrid}>
-          {desafios.map(d => (
-            <Card key={d.titulo}>
-              <CardHeader
-                image={<span style={{ fontSize: '28px' }}>{d.icon}</span>}
-                header={<Text weight="semibold">{d.titulo}</Text>}
-                description={<Text size={200}>{d.texto}</Text>}
-              />
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Estratégias */}
-      <div className={s.section}>
-        <Title2>4. Estratégias e Recomendações</Title2>
-        <Divider />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {estrategias.map(e => (
-            <div key={e.num} className={s.estrategiaRow}>
-              <div className={s.numCircle}>{e.num}</div>
-              <div>
-                <Text weight="semibold">{e.titulo}</Text>
-                <Text size={200} block style={{ color: tokens.colorNeutralForeground2, marginTop: '4px' }}>{e.texto}</Text>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Conclusão */}
-      <Card style={{ backgroundColor: tokens.colorBrandBackground2 }}>
-        <CardHeader
-          header={<Title3>5. Conclusão</Title3>}
-          description={
+          <div className={s.callout}>
+            <Text size={400} className={s.cardTitle}>Por que a educação de qualidade importa para todos os ODS</Text>
             <Body1>
-              A educação de qualidade atua como um <strong>catalisador para todos os outros ODS</strong>.
-              Sem garantir o aprendizado inclusivo e equitativo, torna-se inviável erradicar a pobreza (ODS 1),
-              reduzir as desigualdades (ODS 10) ou promover o crescimento econômico sustentável (ODS 8).
+              A educação atua como <strong>catalisador dos demais objetivos</strong>. Sem aprendizado inclusivo e
+              equitativo, fica inviável erradicar a pobreza (ODS 1), reduzir as desigualdades (ODS 10) ou promover o
+              crescimento econômico sustentável (ODS 8).
             </Body1>
-          }
-        />
-      </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cenário global ───────────────────────────────────────────────── */}
+      {tab === 'global' && (
+        <div className={s.panel}>
+          <SectionHead
+            title="Cenário global"
+            subtitle="A conclusão escolar avança, mas a população fora da escola voltou a crescer."
+          />
+          <div className={s.grid2}>
+            <ChartCard
+              title="Quantas crianças e jovens estão fora da escola"
+              subtitle="População em idade escolar (primário e secundário), em milhões"
+              note="A taxa de exclusão caiu de 27,2% (2000) para 17,4% (2015) e está parada desde então (16,8% em 2024). O número absoluto sobe porque a população cresce nos países de renda baixa e média-baixa. Valores de 2000 e 2015 calculados a partir das variações publicadas."
+              source="ONU/UNESCO UIS, Relatório Estendido dos ODS 2026"
+            >
+              <ColumnChart
+                items={foraDaEscolaPopulacao}
+                ariaLabel="Crianças e jovens fora da escola: cerca de 391 milhões em 2000, 264 milhões em 2015 e 273 milhões em 2024."
+              />
+            </ChartCard>
+
+            <ChartCard
+              title="Onde a exclusão é maior"
+              subtitle="Percentual fora da escola por faixa etária, 2024"
+              note="A África Subsaariana e a Ásia Central e do Sul concentram três quartos de toda a população fora da escola."
+              source="ONU/UNESCO UIS, Relatório Estendido dos ODS 2026"
+            >
+              <HBarChart
+                groups={foraDaEscolaPorEtapa}
+                max={40}
+                ariaLabel="Fora da escola em 2024: cerca de 10% na idade do primário, 15% no 1º ciclo secundário e 31% no 2º ciclo secundário."
+              />
+            </ChartCard>
+          </div>
+
+          <ChartCard
+            title="Cada vez mais estudantes concluem as etapas"
+            subtitle="Taxa de conclusão por nível de ensino (% de quem chega à última série até 3 a 5 anos após a idade oficial)"
+            note="No ritmo atual de expansão, o mundo atingiria 95% de conclusão do ensino médio apenas em 2105 (Relatório GEM 2026)."
+            source="ONU/UNESCO UIS e Relatório GEM 2026"
+          >
+            <HBarChart
+              groups={conclusaoPorEtapa}
+              ariaLabel="Conclusão do primário: 77% em 2000, 84,5% em 2015, 88% em 2024. 1º ciclo secundário: 60%, 73%, 78%. Ensino médio: 37%, 53%, 61%."
+            />
+          </ChartCard>
+
+          <div className={s.grid2}>
+            <ChartCard
+              title="Alfabetização: mundo e África Subsaariana"
+              subtitle="Percentual de alfabetizados, 2015 e 2024"
+              source="UNESCO UIS, Relatório Estendido dos ODS 2026"
+            >
+              <HBarChart
+                groups={alfabetizacao}
+                ariaLabel="Alfabetização de adultos no mundo: 86% em 2015 e 88% em 2024. Jovens: 91% e 93%. Na África Subsaariana, adultos 64% e 69%, jovens 75% e 79%."
+              />
+            </ChartCard>
+
+            <ChartCard
+              title="Competências digitais de quem usa internet"
+              subtitle="Pessoas com ao menos competências básicas, por área"
+              note="O uso da internet (mediana de 92% nos países com dados) é bem maior que as competências para aproveitá-la com segurança. Só cerca de 100 países enviaram dados desde 2020."
+              source="UIT e UNESCO UIS, Relatório Estendido dos ODS 2026"
+            >
+              <HBarChart
+                groups={competenciasDigitais}
+                ariaLabel="Entre usuários de internet: 84% com competências básicas de comunicação, 76% de informação, 72% de resolução de problemas, 59% de criação de conteúdo e 57% de segurança."
+              />
+            </ChartCard>
+          </div>
+
+          <SectionHead title="Escolas, professores e financiamento" />
+          <div className={s.kpiGrid}>
+            <KpiCard icon={<Building24Regular />} label="Escolas primárias sem serviços básicos" value="> 1 em 5" hint="sem eletricidade, água potável ou saneamento" tone="warning" />
+            <KpiCard icon={<Building24Regular />} label="Países menos desenvolvidos: sem energia" value="> 50%" hint="das escolas primárias" tone="danger" />
+            <KpiCard icon={<Building24Regular />} label="Países menos desenvolvidos: sem internet" value="~3 em 4" hint="escolas sem computadores nem internet pedagógicos" tone="danger" />
+            <KpiCard icon={<PersonBoard24Regular />} label="Professores sem a qualificação mínima" value="18% a 21%" hint="padrão definido por cada país, 2024" tone="warning" />
+            <KpiCard icon={<DocumentBulletList24Regular />} label="Ajuda oficial para bolsas (2024)" value="US$ 1,96 bi" hint="queda de 8,1% sobre 2023" tone="brand" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Brasil ───────────────────────────────────────────────────────── */}
+      {tab === 'brasil' && (
+        <div className={s.panel}>
+          <SectionHead
+            title="Brasil"
+            subtitle="Módulo Educação da PNAD Contínua (IBGE), com dados de 2025 divulgados em 19/06/2026."
+          />
+
+          <ChartCard
+            title="Três termômetros da educação básica"
+            subtitle="Resultados de 2025 em comparação com as metas do Plano Nacional de Educação (PNE)"
+            source="IBGE, PNAD Contínua Educação 2025"
+          >
+            <div className={s.rings}>
+              <RingChart value={96.1} display="96,1%" label="Crianças de 6 a 14 anos no ensino fundamental" sublabel="Meta do PNE: 95%, atingida" tone="success" />
+              <RingChart value={80.6} display="80,6%" label="Jovens de 15 a 17 anos no ensino médio" sublabel="Meta do PNE: 85%, ainda não atingida" tone="warning" />
+              <RingChart value={57.4} display="57,4%" label="Adultos (25+) com o ensino médio completo" sublabel="Em 2016 eram menos: a escolaridade avança" tone="brand" />
+            </div>
+          </ChartCard>
+
+          <div className={s.grid2}>
+            <ChartCard
+              title="Analfabetismo por região"
+              subtitle="Pessoas com 15 anos ou mais, 2025"
+              note="São 8,4 milhões de analfabetos no país, 4,8 milhões deles no Nordeste. É a primeira vez, desde 2016, que a taxa fica abaixo de 5%, mas a meta do PNE era erradicar o analfabetismo até 2024."
+              source="IBGE, PNAD Contínua Educação 2025"
+            >
+              <ColumnChart
+                items={analfabetismoRegioes}
+                ariaLabel="Taxa de analfabetismo em 2025: Brasil 4,9%, Nordeste 10,6%, Norte 5,7%, Centro-Oeste 3,3%, Sul 2,4%, Sudeste 2,3%."
+              />
+            </ChartCard>
+
+            <ChartCard
+              title="Quem ainda não lê nem escreve"
+              subtitle="Taxa de analfabetismo por idade e cor ou raça, 2025"
+              note="O analfabetismo está cada vez mais associado ao envelhecimento: 58% dos analfabetos têm 60 anos ou mais."
+              source="IBGE, PNAD Contínua Educação 2025"
+            >
+              <HBarChart
+                groups={analfabetismoPerfil}
+                max={25}
+                ariaLabel="Analfabetismo: 2,6% entre 15 e 59 anos e 13,8% com 60 anos ou mais. Brancos 2,8% e pretos ou pardos 6,5% com 15 anos ou mais; entre idosos, 7,3% e 20,6%."
+              />
+            </ChartCard>
+
+            <ChartCard
+              title="Ensino médio na idade certa"
+              subtitle="Jovens de 15 a 17 anos que frequentavam ou concluíram o ensino médio, 2025"
+              source="IBGE, PNAD Contínua Educação 2025"
+            >
+              <HBarChart
+                groups={medioAdequado}
+                marker={{ value: 85, label: 'Meta do PNE: 85%' }}
+                ariaLabel="Ensino médio na idade certa em 2025: total 80,6%, mulheres 84%, homens 77,4%, brancos 84,9%, pretos ou pardos 77,8%. Meta do PNE: 85%."
+              />
+            </ChartCard>
+
+            <ChartCard
+              title="Por que jovens deixam a escola"
+              subtitle="Motivo de quem tem 14 a 29 anos e não concluiu o ensino médio, 2025"
+              note="Entre os homens, trabalhar pesa mais (54,2%). Entre as mulheres, gravidez (24,7%) e afazeres domésticos ou cuidados (8,6%) também aparecem entre os principais motivos."
+              source="IBGE, PNAD Contínua Educação 2025"
+            >
+              <HBarChart
+                groups={motivosAbandono}
+                max={50}
+                ariaLabel="Motivos de abandono entre jovens de 14 a 29 anos: trabalho 43%, falta de interesse 25,6%, gravidez 9,9%, saúde 4,4%, afazeres domésticos 3,9%, falta de escola ou vaga 2,8%."
+              />
+            </ChartCard>
+          </div>
+
+          <div className={s.kpiGrid}>
+            <KpiCard icon={<People24Regular />} label="Jovens de 14 a 29 sem ensino médio completo" value="7,7 mi" hint="72,8% pretos ou pardos; 59,8% homens" tone="danger" />
+            <KpiCard icon={<BookOpen24Regular />} label="Anos de estudo (25 anos ou mais)" value="10,2" hint="eram 9,1 em 2016" tone="brand" />
+            <KpiCard icon={<DataTrending24Regular />} label="Diferença por cor ou raça" value="1,6 ano" hint="brancos 11,1 anos; pretos ou pardos 9,5" tone="warning" />
+            <KpiCard icon={<Location24Regular />} label="Ensino médio completo: pretos ou pardos" value="51,3%" hint="pela 1ª vez mais da metade (brancos: 64,9%)" tone="success" />
+          </div>
+
+          <div className={s.callout}>
+            <Text size={400} className={s.cardTitle}>E o Recode com isso?</Text>
+            <Body1>
+              Distância até a escola, zona rural, transporte escolar e notas de qualidade, os indicadores que o Recode
+              reúne, conversam diretamente com as metas de acesso, equidade e infraestrutura (4.1, 4.5 e 4.a).
+            </Body1>
+            <div className={s.calloutActions}>
+              <Button appearance="primary" icon={<Location24Regular />} onClick={() => navigate('/')}>Ver o mapa de escolas</Button>
+              <Button appearance="outline" icon={<DataTrending24Regular />} onClick={() => navigate('/progressos')}>Abrir o relatório gerencial</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Metas ────────────────────────────────────────────────────────── */}
+      {tab === 'metas' && (
+        <div className={s.panel}>
+          <SectionHead
+            title="As dez metas do ODS 4"
+            subtitle="Sete metas de resultado e três meios de implementação, cada uma com um dado recente."
+          />
+          <Text size={400} className={s.cardTitle}>Metas de resultado (4.1 a 4.7)</Text>
+          <div className={s.grid3}>{metasResultado.map(m => <MetaCard key={m.id} meta={m} />)}</div>
+          <Text size={400} className={s.cardTitle}>Meios de implementação (4.a a 4.c)</Text>
+          <div className={s.grid3}>{metasMeios.map(m => <MetaCard key={m.id} meta={m} />)}</div>
+        </div>
+      )}
+
+      {/* ── Desafios e caminhos ──────────────────────────────────────────── */}
+      {tab === 'caminhos' && (
+        <div className={s.panel}>
+          <SectionHead title="Desafios para a implementação" />
+          <div className={s.grid2}>
+            {desafios.map(d => (
+              <article key={d.id} className={`${s.card} ${s.rowWithIcon}`}>
+                <div className={s.iconBubble}>{ICONES_DESAFIO[d.id]}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <Text size={400} className={s.cardTitle}>{d.titulo}</Text>
+                  <Text size={300} className={s.muted}>{d.texto}</Text>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <SectionHead title="Estratégias e recomendações" subtitle="Caminhos apontados pelos relatórios da ONU e da UNESCO." />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {estrategias.map(e => (
+              <div key={e.num} className={s.estrategia}>
+                <div className={s.numCircle}>{e.num}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <Text className={s.cardTitle}>{e.titulo}</Text>
+                  <Text size={200} className={s.muted}>{e.texto}</Text>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Fontes ───────────────────────────────────────────────────────── */}
+      <footer className={s.sources}>
+        <Text size={200} weight="semibold">Fontes</Text>
+        {Object.values(FONTES).map(f => (
+          <Text key={f.url} size={200}>
+            <Link href={f.url} target="_blank" rel="noreferrer">{f.nome}</Link>
+          </Text>
+        ))}
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Fluxos principais da aplicação</title>
+  <desc id="desc">Fluxo de importação de produtos por planilha, solicitação de pedido e carregamento do dashboard.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#60758b"/></marker>
+    <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#172b4d}.title{font-size:24px;font-weight:700}.head{font-size:17px;font-weight:700}.body{font-size:14px}.small{font-size:12px}.box{stroke-width:2}.edge{fill:none;stroke:#60758b;stroke-width:2.5;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect width="1200" height="760" rx="16" fill="#f7f9fc"/>
+  <text x="600" y="42" text-anchor="middle" class="title">Fluxos principais da aplicação</text>
+  <text x="35" y="90" class="head">1. Importação de produtos da planilha</text>
+  <g class="edge"><path d="M190 150H260"/><path d="M370 190V225"/><path d="M480 150H560"/><path d="M800 150H890"/></g>
+  <rect x="35" y="120" width="155" height="60" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="112" y="156" text-anchor="middle" class="body">Administrador</text>
+  <rect x="260" y="110" width="220" height="80" rx="10" fill="#dae8fc" stroke="#6c8ebf" class="box"/><text x="370" y="140" text-anchor="middle" class="body" font-weight="700">Produtos.tsx</text><text x="370" y="163" text-anchor="middle" class="small">link → CSV → validar / prévia</text>
+  <rect x="260" y="225" width="220" height="60" rx="10" fill="#d5e8d4" stroke="#82b366" class="box"/><text x="370" y="251" text-anchor="middle" class="body" font-weight="700">Google Sheets</text><text x="370" y="273" text-anchor="middle" class="small">aba pelo gid · leitura pública</text>
+  <rect x="560" y="110" width="240" height="80" rx="10" fill="#d5e8d4" stroke="#82b366" class="box"/><text x="680" y="140" text-anchor="middle" class="body" font-weight="700">POST /api/produtos</text><text x="680" y="163" text-anchor="middle" class="small">Controller → Service → Repository</text>
+  <rect x="890" y="110" width="245" height="80" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="1012" y="140" text-anchor="middle" class="body" font-weight="700">PostgreSQL</text><text x="1012" y="163" text-anchor="middle" class="small">produto persistido</text>
+  <text x="35" y="340" class="head">2. Solicitação de pedido</text>
+  <g class="edge"><path d="M190 405H260"/><path d="M480 405H560"/><path d="M800 405H890"/></g>
+  <rect x="35" y="375" width="155" height="60" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="112" y="411" text-anchor="middle" class="body">Usuário</text>
+  <rect x="260" y="365" width="220" height="80" rx="10" fill="#dae8fc" stroke="#6c8ebf" class="box"/><text x="370" y="395" text-anchor="middle" class="body" font-weight="700">Produtos.tsx</text><text x="370" y="418" text-anchor="middle" class="small">produto · escola · professor · qtd.</text>
+  <rect x="560" y="365" width="240" height="80" rx="10" fill="#d5e8d4" stroke="#82b366" class="box"/><text x="680" y="395" text-anchor="middle" class="body" font-weight="700">POST /api/pedidos/...</text><text x="680" y="418" text-anchor="middle" class="small">PedidoController e PedidoService</text>
+  <rect x="890" y="365" width="245" height="80" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="1012" y="395" text-anchor="middle" class="body" font-weight="700">PostgreSQL</text><text x="1012" y="418" text-anchor="middle" class="small">validar relações · gravar · responder</text>
+  <text x="35" y="500" class="head">3. Carregamento do dashboard</text>
+  <g class="edge"><path d="M190 570H260"/><path d="M480 570H560"/><path d="M800 570H890"/></g>
+  <rect x="35" y="540" width="155" height="60" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="112" y="576" text-anchor="middle" class="body">Dashboard</text>
+  <rect x="260" y="530" width="220" height="80" rx="10" fill="#dae8fc" stroke="#6c8ebf" class="box"/><text x="370" y="560" text-anchor="middle" class="body" font-weight="700">Frontend / Axios</text><text x="370" y="583" text-anchor="middle" class="small">escolas · alunos · endereços · avaliações</text>
+  <rect x="560" y="530" width="240" height="80" rx="10" fill="#d5e8d4" stroke="#82b366" class="box"/><text x="680" y="560" text-anchor="middle" class="body" font-weight="700">API Spring Boot</text><text x="680" y="583" text-anchor="middle" class="small">controllers · services · repositories</text>
+  <rect x="890" y="530" width="245" height="80" rx="10" fill="#fff2cc" stroke="#d6b656" class="box"/><text x="1012" y="560" text-anchor="middle" class="body" font-weight="700">PostgreSQL</text><text x="1012" y="583" text-anchor="middle" class="small">respostas agregadas em mapa e KPIs</text>
+  <text x="600" y="685" text-anchor="middle" class="small">Os fluxos descrevem o comportamento documentado da aplicação; a importação usa somente planilhas públicas.</text>
+</svg>

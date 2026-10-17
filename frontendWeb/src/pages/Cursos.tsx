@@ -10,9 +10,11 @@ import { getCursos, getEscolas, createCurso, updateCurso, deleteCurso } from '..
 import type { Curso, Escola } from '../types';
 import { AppDialog } from '../components/AppDialog';
 import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/EmptyState';
+import { useConfirm } from '../hooks/useConfirm';
+import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
-import { GoogleSheetsImporter, findSheetEntity, sheetNumber, sheetValue, type GoogleSheetRow } from '../components/GoogleSheetsImporter';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -26,6 +28,7 @@ export default function Cursos() {
   const s = useStyles();
   const fs = useFormStyles();
   const { isAdmin } = useAuth();
+  const { confirmar, dialog } = useConfirm();
 
   const [cursos,  setCursos]  = useState<Curso[]>([]);
   const [escolas, setEscolas] = useState<Escola[]>([]);
@@ -105,25 +108,8 @@ export default function Cursos() {
     }
   };
 
-  const importCurso = async (row: GoogleSheetRow) => {
-    const escola = findSheetEntity(escolas, sheetValue(row, 'escola'), 'Escola');
-    const nome = sheetValue(row, 'nome');
-    if (!nome) throw new Error('Nome do curso é obrigatório.');
-    const carga = sheetValue(row, 'cargaHoraria');
-    const cargaHoraria = carga ? sheetNumber(carga, 'cargaHoraria') : null;
-    if (cargaHoraria !== null && (!Number.isInteger(cargaHoraria) || cargaHoraria < 1)) {
-      throw new Error('Carga horária deve ser um número inteiro positivo.');
-    }
-    await createCurso(escola.id, {
-      nome,
-      descricao: sheetValue(row, 'descricao') || null,
-      cargaHoraria,
-      escola: { id: escola.id },
-    });
-  };
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Deseja excluir permanentemente este curso da grade?')) return;
+    if (!(await confirmar('Deseja excluir permanentemente este curso da grade?'))) return;
     try { 
       await deleteCurso(id); 
       load(); 
@@ -137,17 +123,17 @@ export default function Cursos() {
 
   const columns = [
     createTableColumn<Curso>({ 
-      columnId: 'nome',        
+      columnId: 'nome', compare: (a, b) => cmpTexto(a.nome, b.nome),        
       renderHeaderCell: () => 'Programa Acadêmico',          
       renderCell: i => <TableCellLayout media={<BookOpen24Regular />}><b>{i.nome}</b></TableCellLayout> 
     }),
     createTableColumn<Curso>({ 
-      columnId: 'escola',      
+      columnId: 'escola', compare: (a, b) => cmpTexto(a.escola?.nome, b.escola?.nome),      
       renderHeaderCell: () => 'Instituição Vinculada',        
       renderCell: i => <TableCellLayout media={<Building24Regular />}>{i.escola?.nome ?? '—'}</TableCellLayout> 
     }),
     createTableColumn<Curso>({ 
-      columnId: 'cargaHoraria',
+      columnId: 'cargaHoraria', compare: (a, b) => cmpNumero(a.cargaHoraria, b.cargaHoraria),
       renderHeaderCell: () => 'Carga Horária', 
       renderCell: i => <TableCellLayout>{i.cargaHoraria ? `${i.cargaHoraria}h` : '—'}</TableCellLayout> 
     }),
@@ -177,26 +163,17 @@ export default function Cursos() {
   return (
     <div className={s.page}>
       <PageHeader
-        title="📚 Cursos"
+        icon={<BookOpen24Regular />}
+        title="Cursos"
         subtitle={`${cursos.length} curso${cursos.length !== 1 ? 's' : ''} ativo${cursos.length !== 1 ? 's' : ''}`}
-        actions={isAdmin && (
-          <>
-            <GoogleSheetsImporter
-              title="cursos"
-              requiredColumns={['nome', 'escola']}
-              onImportRow={importCurso}
-              onComplete={load}
-            />
-            <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Curso</Button>
-          </>
-        )}
+        actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Curso</Button>}
       />
 
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {loading ? <Spinner label="Consultando grade acadêmica cadastrada..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={cursos} columns={columns} resizableColumns columnSizingOptions={{ nome: { defaultWidth: 240 }, escola: { defaultWidth: 240 } }}>
+          <DataGrid items={cursos} columns={columns} sortable resizableColumns columnSizingOptions={{ nome: { defaultWidth: 240 }, escola: { defaultWidth: 240 } }}>
             <DataGridHeader>
               <DataGridRow>
                 {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
@@ -211,9 +188,7 @@ export default function Cursos() {
             </DataGridBody>
           </DataGrid>
           {cursos.length === 0 && (
-            <div style={{ padding: '32px', textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
-              Nenhum programa acadêmico cadastrado.
-            </div>
+            <EmptyState message="Nenhum programa acadêmico cadastrado." />
           )}
         </div>
       )}
@@ -249,6 +224,7 @@ export default function Cursos() {
           </div>
         </form>
       </AppDialog>
+      {dialog}
     </div>
   );
 }
