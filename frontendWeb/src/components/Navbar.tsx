@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge, Switch, Tooltip, Avatar, Button,
+  makeStyles, tokens, Text, Badge, Tooltip, Avatar, Button,
+  Menu, MenuTrigger, MenuPopover, MenuList, MenuGroupHeader, MenuItemRadio,
 } from '@fluentui/react-components';
 import {
   BookOpen24Regular,
@@ -7,9 +9,16 @@ import {
   Settings24Regular,
   WeatherMoon24Regular,
   WeatherSunny24Regular,
+  ChevronDown16Regular,
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import type { UserRole } from '../types';
+
+const PERFIS: Record<UserRole, { label: string; badge: string }> = {
+  user: { label: 'Usuário', badge: 'USER' },
+  admin: { label: 'Administrador', badge: 'ADMIN' },
+};
 
 const useStyles = makeStyles({
   header: {
@@ -30,6 +39,8 @@ const useStyles = makeStyles({
     gap: '10px',
     textDecoration: 'none',
     color: tokens.colorNeutralForegroundOnBrand,
+    borderRadius: tokens.borderRadiusMedium,
+    ':focus-visible': { outline: '2px solid #fff', outlineOffset: '4px' },
   },
   title: {
     fontWeight: '600',
@@ -41,86 +52,82 @@ const useStyles = makeStyles({
     alignItems: 'center',
     gap: '12px',
   },
-  roleBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  switchLabel: {
-    color: tokens.colorNeutralForegroundOnBrand,
-    fontSize: '13px',
-    whiteSpace: 'nowrap',
-  },
   divider: {
     width: '1px',
     height: '24px',
     backgroundColor: 'rgba(255,255,255,0.25)',
     flexShrink: 0,
   },
+  // Botões sobre o cabeçalho colorido: texto branco e fundo translúcido ao passar o mouse.
+  profileBtn: {
+    color: tokens.colorNeutralForegroundOnBrand,
+    gap: '8px',
+    ':hover': { backgroundColor: 'rgba(255,255,255,0.15)', color: tokens.colorNeutralForegroundOnBrand },
+    ':hover:active': { backgroundColor: 'rgba(255,255,255,0.22)', color: tokens.colorNeutralForegroundOnBrand },
+  },
+  profileText: {
+    fontSize: '13px',
+    whiteSpace: 'nowrap',
+  },
   themeBtn: {
     color: tokens.colorNeutralForegroundOnBrand,
-    // força fundo transparente sobre o header colorido
     backgroundColor: 'transparent',
     border: '1px solid rgba(255,255,255,0.35)',
     ':hover': {
       backgroundColor: 'rgba(255,255,255,0.15)',
       border: '1px solid rgba(255,255,255,0.55)',
+      color: tokens.colorNeutralForegroundOnBrand,
     },
   },
 });
 
 export default function Navbar() {
   const s = useStyles();
-  const { setRole, isAdmin } = useAuth();
+  const { role, setRole, isAdmin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const perfil = PERFIS[role];
 
   return (
     <header className={s.header}>
-      <div className={s.brand}>
+      <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para o Dashboard">
         <BookOpen24Regular style={{ fontSize: '24px' }} />
         <Text className={s.title}>Recode — Avaliação Escolas</Text>
-      </div>
+      </Link>
 
       <div className={s.right}>
-        {/* ── Perfil de usuário ── */}
-        <div className={s.roleBadge}>
-          {isAdmin
-            ? <Settings24Regular style={{ color: tokens.colorNeutralForegroundOnBrand }} />
-            : <Person24Regular   style={{ color: tokens.colorNeutralForegroundOnBrand }} />
-          }
-          <Text className={s.switchLabel}>{isAdmin ? 'Administrador' : 'Usuário'}</Text>
-        </div>
-
-        <Tooltip
-          content={isAdmin ? 'Mudar para Usuário Comum' : 'Mudar para Administrador'}
-          relationship="label"
+        {/* Perfil de acesso: avatar, papel atual e troca de papel num único menu */}
+        <Menu
+          checkedValues={{ perfil: [role] }}
+          onCheckedValueChange={(_, d) => {
+            const novo = d.checkedItems[0];
+            if (novo === 'admin' || novo === 'user') setRole(novo);
+          }}
         >
-          <Switch
-            checked={isAdmin}
-            onChange={(_, d) => setRole(d.checked ? 'admin' : 'user')}
-            label={
-              <Badge
-                appearance="filled"
-                color={isAdmin ? 'warning' : 'informative'}
-                size="medium"
-              >
-                {isAdmin ? 'ADMIN' : 'USER'}
+          <MenuTrigger disableButtonEnhancement>
+            <Button
+              appearance="transparent"
+              className={s.profileBtn}
+              icon={<Avatar name={perfil.label} color={isAdmin ? 'gold' : 'blue'} size={28} />}
+              aria-label={`Perfil atual: ${perfil.label}. Abrir menu de perfil`}
+            >
+              <span className={s.profileText}>{perfil.label}</span>
+              <Badge appearance="filled" color={isAdmin ? 'warning' : 'informative'} size="medium">
+                {perfil.badge}
               </Badge>
-            }
-          />
-        </Tooltip>
+              <ChevronDown16Regular />
+            </Button>
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              <MenuGroupHeader>Perfil de acesso</MenuGroupHeader>
+              <MenuItemRadio name="perfil" value="user" icon={<Person24Regular />}>Usuário comum</MenuItemRadio>
+              <MenuItemRadio name="perfil" value="admin" icon={<Settings24Regular />}>Administrador</MenuItemRadio>
+            </MenuList>
+          </MenuPopover>
+        </Menu>
 
-        <Avatar
-          name={isAdmin ? 'Admin' : 'Usuário'}
-          color={isAdmin ? 'gold' : 'blue'}
-          size={32}
-          badge={{ status: 'available' }}
-        />
-
-        {/* ── Separador ── */}
         <div className={s.divider} />
 
-        {/* ── Botão de tema ── */}
         <Tooltip
           content={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
           relationship="label"

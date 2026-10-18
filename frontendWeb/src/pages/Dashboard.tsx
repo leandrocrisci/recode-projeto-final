@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { APIProvider, Map, Marker, InfoWindow, Circle } from '@vis.gl/react-google-maps';
-import { Spinner, Text, Badge, makeStyles, tokens, Button, Input, MessageBar, MessageBarBody } from '@fluentui/react-components';
+import { APIProvider, AdvancedMarker, ColorScheme, Map, InfoWindow, Circle } from '@vis.gl/react-google-maps';
+import { Spinner, Text, Badge, makeStyles, tokens, Button, Input, MessageBar, MessageBarBody, FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { Building24Regular, VehicleBus24Regular, MyLocation24Regular, Star24Regular, Clock24Regular, People24Regular, Location24Regular, Search24Regular, ArrowLeft24Regular } from '@fluentui/react-icons';
 import { KpiCard } from '../components/KpiCard';
+import { useTheme } from '../context/ThemeContext';
 import { corTipoEscola } from '../utils/tipoEscola';
 import type { KpiTone } from '../components/KpiCard';
 import { useEscolasAgregadas } from '../hooks/useEscolasAgregadas';
@@ -37,6 +38,10 @@ const useStyles = makeStyles({
 
 const BRASILIA_CENTER = { lat: -14.235004, lng: -51.92528 };
 
+// O AdvancedMarker exige um Map ID. 'DEMO_MAP_ID' serve para desenvolvimento;
+// em produção crie um Map ID no Google Cloud e defina VITE_GOOGLE_MAP_ID no .env.local.
+const MAP_ID = import.meta.env.VITE_GOOGLE_MAP_ID || 'DEMO_MAP_ID';
+
 // Faixas de nota (escala 1–5): >= 4 boa, >= 2,5 atenção, abaixo disso crítica.
 const faixaNota = (n: number | null) =>
   n === null ? 'informative' : n >= 4 ? 'success' : n >= 2.5 ? 'warning' : 'danger';
@@ -48,6 +53,7 @@ const rotuloNota = (nota: string) => (nota === SEM_AVALIACAO ? 'Sem avaliação'
 export default function Dashboard() {
   const s = useStyles();
   const { escolas, loading, error } = useEscolasAgregadas();
+  const { isDark } = useTheme();
   const escolasNoMapa = useMemo(() => escolas.filter(temCoordenadas), [escolas]);
   const kpis = useMemo(() => calcularKpis(escolas), [escolas]);
   const semLocalizacao = escolas.length - escolasNoMapa.length;
@@ -138,13 +144,15 @@ export default function Dashboard() {
           {/* Caixa do Mapa controlada pelos estados reativos de zoom e centro */}
           <div className={s.mapBox}>
             <Map 
+              mapId={MAP_ID} 
+              colorScheme={isDark ? ColorScheme.DARK : ColorScheme.LIGHT} 
               center={mapCenter} 
               zoom={mapZoom}
               onCenterChanged={(e) => setMapCenter(e.detail.center)}
               onZoomChanged={(e) => setMapZoom(e.detail.zoom)}
             >
               {escolasNoMapa.map((escola) => (
-                <Marker
+                <AdvancedMarker
                   key={escola.id}
                   position={{ lat: Number(escola.latitude), lng: Number(escola.longitude) }}
                   onClick={() => handleMarkerClick(escola)} // Dispara o novo gerenciador de foco e afastamento
@@ -169,18 +177,22 @@ export default function Dashboard() {
                   position={{ lat: escolaSelecionada.latitude, lng: escolaSelecionada.longitude }}
                   onCloseClick={handleClosePanel}
                 >
-                  <div className={s.infoWindowWrap}>
-                    <Text weight="bold" size={300}>{escolaSelecionada.nome}</Text>
-                    <br />
-                    <Text size={200}>{escolaSelecionada.enderecoFormatado}</Text>
-                    <br />
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
-                      <Badge appearance="tint" color={corTipoEscola(escolaSelecionada.tipo)}>{escolaSelecionada.tipo}</Badge>
-                      <Badge appearance="filled" color={getNotaColor(escolaSelecionada.estatisticas.notaQualidadeMedia)}>
-                        ★ {escolaSelecionada.estatisticas.notaQualidadeMedia}
-                      </Badge>
+                  {/* O balão do InfoWindow é do Google e fica branco mesmo no mapa escuro. Os tokens do Fluent seguem
+                      o tema do app (texto branco no escuro), então o conteúdo usa sempre o tema claro para ser legível. */}
+                  <FluentProvider theme={webLightTheme} style={{ background: 'transparent' }}>
+                    <div className={s.infoWindowWrap}>
+                      <Text weight="bold" size={300}>{escolaSelecionada.nome}</Text>
+                      <br />
+                      <Text size={200}>{escolaSelecionada.enderecoFormatado}</Text>
+                      <br />
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
+                        <Badge appearance="tint" color={corTipoEscola(escolaSelecionada.tipo)}>{escolaSelecionada.tipo}</Badge>
+                        <Badge appearance="filled" color={getNotaColor(escolaSelecionada.estatisticas.notaQualidadeMedia)}>
+                          ★ {escolaSelecionada.estatisticas.notaQualidadeMedia}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
+                  </FluentProvider>
                 </InfoWindow>
               )}
             </Map>

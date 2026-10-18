@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge, Tooltip,
+  makeStyles, tokens, Text, Badge,
 } from '@fluentui/react-components';
 import {
   Home24Regular, Home24Filled,
@@ -17,6 +17,8 @@ import {
   PersonBoard24Regular, PersonBoard24Filled,
   ShoppingBag24Regular, ShoppingBag24Filled,
   DataTrending24Regular, DataTrending24Filled,
+  Shield24Regular, Shield24Filled,
+  Heart24Regular, Heart24Filled,
   bundleIcon,
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +36,8 @@ const DocsIcon       = bundleIcon(DocumentBulletList24Filled, DocumentBulletList
 const ProfessorIcon  = bundleIcon(PersonBoard24Filled,        PersonBoard24Regular);
 const PedidoIcon     = bundleIcon(ShoppingBag24Filled,        ShoppingBag24Regular);
 const ProgressoIcon  = bundleIcon(DataTrending24Filled,       DataTrending24Regular);
+const EventosIcon    = bundleIcon(Shield24Filled,             Shield24Regular);
+const AgradIcon      = bundleIcon(Heart24Filled,              Heart24Regular);
 
 const useStyles = makeStyles({
   nav: {
@@ -49,7 +53,7 @@ const useStyles = makeStyles({
   },
   section: {
     paddingLeft: '8px',
-    paddingTop: '16px',
+    paddingTop: '12px',
     paddingBottom: '4px',
     color: tokens.colorNeutralForeground3,
     fontSize: '11px',
@@ -61,7 +65,7 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    padding: '8px 10px',
+    padding: '7px 10px',
     borderRadius: tokens.borderRadiusMedium,
     textDecoration: 'none',
     color: tokens.colorNeutralForeground1,
@@ -70,6 +74,7 @@ const useStyles = makeStyles({
     ':hover': {
       backgroundColor: tokens.colorNeutralBackground3Hover,
     },
+    ':focus-visible': { outline: `2px solid ${tokens.colorStrokeFocus2}`, outlineOffset: '-2px' },
   },
   active: {
     backgroundColor: tokens.colorBrandBackground2,
@@ -83,14 +88,16 @@ interface NavItemProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   badge?: string;
+  title?: string; // dica nativa ao passar o mouse
 }
 
-function NavItem({ to, icon: Icon, label, badge }: NavItemProps) {
+function NavItem({ to, icon: Icon, label, badge, title }: NavItemProps) {
   const s = useStyles();
   return (
     <NavLink
       to={to}
       end={to === '/'}
+      title={title}
       className={({ isActive }) => `${s.link}${isActive ? ' ' + s.active : ''}`}
     >
       <Icon />
@@ -105,7 +112,7 @@ export default function Sidebar() {
   const { isAdmin } = useAuth();
 
   return (
-    <nav className={s.nav}>
+    <nav className={s.nav} aria-label="Navegação principal">
       <Text className={s.section}>Navegação</Text>
       <NavItem to="/"            icon={HomeIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
@@ -114,29 +121,30 @@ export default function Sidebar() {
       <NavItem to="/escolas"     icon={EscolaIcon}  label="Escolas" />
       <NavItem to="/cursos"      icon={CursoIcon}   label="Cursos" />
       <NavItem to="/alunos"      icon={AlunoIcon}   label="Alunos" />
+      <NavItem to="/professores" icon={ProfessorIcon} label="Professores" />
+      <NavItem to="/enderecos"   icon={EnderecoIcon}  label="Endereços" />
 
       <Text className={s.section}>Avaliações</Text>
       <NavItem to="/av-cursos"    icon={AvAlunoIcon}  label="Aval. Cursos" />
       <NavItem to="/av-qualidade" icon={AvQualIcon}   label="Aval. Qualidade" />
 
-      <Text className={s.section}>Endereços</Text>
-      <NavItem to="/enderecos"   icon={EnderecoIcon} label="Endereços" />
-
       <Text className={s.section}>Suprimentos</Text>
-      <Tooltip content={isAdmin ? 'Gestão de Produtos' : 'Vitrine de Produtos'} relationship="label">
-        <NavItem to="/produtos"    icon={ProdutoIcon}   label="Produtos"
-          badge={isAdmin ? 'Admin' : undefined}
-        />
-      </Tooltip>
-      <NavItem to="/professores" icon={ProfessorIcon} label="Professores" />
+      <NavItem
+        to="/produtos"
+        icon={ProdutoIcon}
+        label="Produtos"
+        badge={isAdmin ? 'Admin' : undefined}
+        title={isAdmin ? 'Gestão de Produtos' : 'Vitrine de Produtos'}
+      />
       <NavItem to="/pedidos"     icon={PedidoIcon}    label="Pedidos" />
 
       <Text className={s.section}>Acompanhamento</Text>
-      <NavItem to="/progressos"  icon={ProgressoIcon} label="Relatorio Gerencial" />
-      <NavItem to="/DevLogger"  icon={ProgressoIcon} label="Gerenciamento Eventos" />
+      <NavItem to="/progressos"  icon={ProgressoIcon} label="Relatório Gerencial" />
+      <NavItem to="/eventos"    icon={EventosIcon}   label="Central de Eventos" />
 
       <Text className={s.section}>Projeto</Text>
       <NavItem to="/docs" icon={DocsIcon} label="Documentação" />
+      <NavItem to="/agradecimentos" icon={AgradIcon} label="Agradecimentos" />
     </nav>
   );
 }

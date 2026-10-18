@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import {
   FluentProvider, webLightTheme, webDarkTheme, makeStyles, tokens,
 } from '@fluentui/react-components';
@@ -19,6 +19,7 @@ import Enderecos from './pages/Enderecos';
 import Produtos  from './pages/Produtos';
 import Ods4         from './pages/Ods4';
 import Documentacao from './pages/Documentacao';
+import Agradecimentos from './pages/Agradecimentos';
 import Professores  from './pages/Professores';
 import Pedidos      from './pages/Pedidos';
 import Progressos   from './pages/RelatorioDashboard';
@@ -71,12 +72,15 @@ function AppShell() {
             <Route path="/produtos"     element={<Produtos />} />
             <Route path="/ods4"         element={<Ods4 />} />
             <Route path="/docs"         element={<Documentacao />} />
+            <Route path="/agradecimentos" element={<Agradecimentos />} />
             <Route path="/professores"  element={<Professores />} />
             <Route path="/pedidos"      element={<Pedidos />} />
             <Route path="/progressos"   element={<Progressos />} />
             
-            {/* Rota dedicada adicionada para renderizar o Logger em tela cheia na URL correspondente */}
-            <Route path="/DevLogger"    element={<GerenciamentoEventos />} />
+            {/* Central de Eventos e Auditoria */}
+            <Route path="/eventos"      element={<GerenciamentoEventos />} />
+            {/* Rota antiga: mantém favoritos e links funcionando */}
+            <Route path="/DevLogger"    element={<Navigate to="/eventos" replace />} />
           </Routes>
         </main>
       </div>
