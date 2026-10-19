@@ -1,7 +1,7 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge,
+  makeStyles, tokens, Text, Badge, Button, mergeClasses,
 } from '@fluentui/react-components';
 import {
   Home24Regular, Home24Filled,
@@ -19,6 +19,7 @@ import {
   DataTrending24Regular, DataTrending24Filled,
   Shield24Regular, Shield24Filled,
   Heart24Regular, Heart24Filled,
+  Navigation24Regular, Dismiss24Regular,
   bundleIcon,
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +51,26 @@ const useStyles = makeStyles({
     padding: '12px 8px',
     gap: '2px',
     overflowY: 'auto',
+    // Celular: o menu vira uma gaveta escondida que desliza da esquerda
+    '@media (max-width: 768px)': {
+      position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1001,
+      width: '260px', minWidth: '260px', boxShadow: tokens.shadow28,
+      transform: 'translateX(-100%)', transition: 'transform 0.2s ease',
+    },
+  },
+  navOpen: { '@media (max-width: 768px)': { transform: 'translateX(0)' } },
+  // Botão de abrir: só aparece no celular, fixo no canto inferior para não brigar com a barra do topo
+  toggle: {
+    display: 'none',
+    '@media (max-width: 768px)': {
+      display: 'inline-flex', position: 'fixed', left: '12px', bottom: '16px', zIndex: 1000,
+      boxShadow: tokens.shadow16, borderRadius: tokens.borderRadiusCircular,
+    },
+  },
+  closeRow: { display: 'none', '@media (max-width: 768px)': { display: 'flex', justifyContent: 'flex-end' } },
+  backdrop: {
+    display: 'none',
+    '@media (max-width: 768px)': { display: 'block', position: 'fixed', inset: 0, zIndex: 1000, backgroundColor: tokens.colorBackgroundOverlay },
   },
   section: {
     paddingLeft: '8px',
@@ -110,9 +131,38 @@ function NavItem({ to, icon: Icon, label, badge, title }: NavItemProps) {
 export default function Sidebar() {
   const s = useStyles();
   const { isAdmin } = useAuth();
+  const [aberto, setAberto] = useState(false);
+  const { pathname } = useLocation();
+
+  // Fecha a gaveta ao trocar de página
+  useEffect(() => { setAberto(false); }, [pathname]);
+
+  // Fecha com a tecla Esc
+  useEffect(() => {
+    if (!aberto) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAberto(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [aberto]);
 
   return (
-    <nav className={s.nav} aria-label="Navegação principal">
+    <>
+    <Button
+      className={s.toggle}
+      appearance="primary"
+      shape="circular"
+      size="large"
+      icon={<Navigation24Regular />}
+      aria-label="Abrir menu"
+      aria-expanded={aberto}
+      aria-controls="menu-principal"
+      onClick={() => setAberto(true)}
+    />
+    {aberto && <div className={s.backdrop} onClick={() => setAberto(false)} aria-hidden="true" />}
+    <nav id="menu-principal" className={mergeClasses(s.nav, aberto && s.navOpen)} aria-label="Navegação principal">
+      <div className={s.closeRow}>
+        <Button appearance="subtle" icon={<Dismiss24Regular />} aria-label="Fechar menu" onClick={() => setAberto(false)} />
+      </div>
       <Text className={s.section}>Navegação</Text>
       <NavItem to="/"            icon={HomeIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
@@ -146,5 +196,6 @@ export default function Sidebar() {
       <NavItem to="/docs" icon={DocsIcon} label="Documentação" />
       <NavItem to="/agradecimentos" icon={AgradIcon} label="Agradecimentos" />
     </nav>
+    </>
   );
 }

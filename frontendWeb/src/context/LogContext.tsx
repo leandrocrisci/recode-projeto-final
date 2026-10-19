@@ -1,14 +1,17 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { iniciarCapturaConsole } from '../services/consoleCapture';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
 export type LogLevel = 'info' | 'success' | 'warn' | 'error';
+export type LogSource = 'network' | 'audit' | 'console' | 'runtime';
 
 export interface LogEntry {
   id: number;
   ts: number;          // Date.now()
   level: LogLevel;
+  source?: LogSource;
   method?: string;     // GET, POST, PUT, DELETE
   url?: string;
   status?: number;
@@ -47,6 +50,10 @@ export function LogProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearLogs = useCallback(() => setLogs([]), []);
+
+  // Espelha aqui o console do navegador (log, info, warn, error) e os erros não tratados.
+  // useLayoutEffect para começar antes dos efeitos das páginas (as primeiras chamadas à API).
+  useLayoutEffect(() => iniciarCapturaConsole(addLog), [addLog]);
 
   return (
     <LogContext.Provider value={{ logs, addLog, clearLogs }}>

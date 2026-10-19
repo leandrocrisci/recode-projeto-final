@@ -33,6 +33,7 @@ const useStyles = makeStyles({
     ':hover:active': { backgroundColor: tokens.colorPaletteRedForeground1, color: tokens.colorNeutralForegroundOnBrand },
     ':disabled': { backgroundColor: tokens.colorNeutralBackgroundDisabled, color: tokens.colorNeutralForegroundDisabled },
   },
+  srOnly: { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 },
   codeBox: { margin: '4px 0', padding: '12px', backgroundColor: tokens.colorNeutralBackground1Hover, border: `1px solid ${tokens.colorNeutralStroke2}`, borderRadius: tokens.borderRadiusMedium, fontSize: '11px', color: tokens.colorNeutralForeground2, fontFamily: 'Consolas, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: '220px', overflowY: 'auto' }
 });
 
@@ -46,6 +47,10 @@ function fmtTimestamp(ts: number): string {
 const BADGE_COLOR: Record<LogLevel, 'success' | 'warning' | 'danger' | 'informative'> = {
   info: 'informative', success: 'success', warn: 'warning', error: 'danger'
 };
+
+// Nome falado de cada nível e da faixa de status (a cor sozinha não chega ao leitor de tela)
+const NIVEL_FALADO: Record<LogLevel, string> = { info: 'informação', success: 'sucesso', warn: 'aviso', error: 'erro' };
+const descreverStatus = (st: number) => `Status ${st}, ${st < 300 ? 'sucesso' : st < 500 ? 'erro do pedido' : 'erro do servidor'}`;
 
 const METHOD_COLOR = (method: string): string => {
   const colors: Record<string, string> = { GET: '#16a34a', POST: '#2563eb', PUT: '#d97706', DELETE: '#dc2626' };
@@ -100,12 +105,12 @@ export default function GerenciamentoEventos() {
     createTableColumn<LogEntry>({
       columnId: 'status', compare: (a, b) => cmpNumero(a.status, b.status),
       renderHeaderCell: () => 'Status',
-      renderCell: l => <TableCellLayout>{l.status !== undefined ? <span style={{ fontWeight: 'bold', color: l.status < 300 ? '#16a34a' : l.status < 500 ? '#d97706' : '#dc2626' }}>{l.status}</span> : '—'}</TableCellLayout>
+      renderCell: l => <TableCellLayout>{l.status !== undefined ? <span style={{ fontWeight: 'bold', color: l.status < 300 ? '#16a34a' : l.status < 500 ? '#d97706' : '#dc2626' }}><span aria-hidden="true">{l.status}</span><span className={s.srOnly}>{descreverStatus(l.status)}</span></span> : '—'}</TableCellLayout>
     }),
     createTableColumn<LogEntry>({
       columnId: 'mensagem',
       renderHeaderCell: () => 'Mensagem de Evento',
-      renderCell: l => <TableCellLayout><Badge appearance="filled" color={BADGE_COLOR[l.level]} size="small" style={{ marginRight: '6px' }}>{l.level.toUpperCase()}</Badge><Text style={{ wordBreak: 'break-word' }}>{l.message}</Text></TableCellLayout>
+      renderCell: l => <TableCellLayout><Badge appearance="filled" color={BADGE_COLOR[l.level]} size="small" style={{ marginRight: '6px' }}><span aria-hidden="true">{l.level.toUpperCase()}</span><span className={s.srOnly}>{`Nível: ${NIVEL_FALADO[l.level]}.`}</span></Badge><Text style={{ wordBreak: 'break-word' }}>{l.message}</Text></TableCellLayout>
     }),
     createTableColumn<LogEntry>({
       columnId: 'duracao', compare: (a, b) => cmpNumero(a.durationMs, b.durationMs),
@@ -115,7 +120,7 @@ export default function GerenciamentoEventos() {
     createTableColumn<LogEntry>({
       columnId: 'acoes',
       renderHeaderCell: () => '',
-      renderCell: l => <TableCellLayout><Tooltip content="Inspecionar Payload" relationship="label"><Button size="small" appearance="subtle" icon={<Search24Regular />} onClick={() => setLogSelecionado(l)} /></Tooltip></TableCellLayout>
+      renderCell: l => <TableCellLayout><Tooltip content="Inspecionar Payload" relationship="label"><Button size="small" appearance="subtle" icon={<Search24Regular />} onClick={() => setLogSelecionado(l)} aria-label={`Ver detalhes do evento: ${l.message}`} /></Tooltip></TableCellLayout>
     })
   ];
 
@@ -124,7 +129,7 @@ export default function GerenciamentoEventos() {
       <PageHeader
         icon={<Shield24Regular />}
         title="Central de Eventos e Auditoria"
-        subtitle="Monitoramento de tráfego HTTP e logs de execução do sistema em tempo real"
+        subtitle="Monitoramento de tráfego HTTP e do console do navegador em tempo real"
         actions={
           <>
             <Button icon={<ArrowDownload24Regular />} appearance="outline" onClick={exportarLogs} disabled={filtrados.length === 0}>
@@ -135,6 +140,7 @@ export default function GerenciamentoEventos() {
               appearance="primary"
               className={s.danger}
               disabled={logs.length === 0}
+              aria-label={`Limpar todos os ${logs.length} eventos registrados`}
               onClick={() => { clearLogs(); setLogSelecionado(null); }}
             >
               Limpar Logs
@@ -143,18 +149,18 @@ export default function GerenciamentoEventos() {
         }
       />
 
-      <div className={s.kpiGrid}>
-        <KpiCard icon={<Shield24Regular />} label="Volume Total de Requisições" value={kpis.total} />
-        <KpiCard icon={<ErrorCircle24Regular />} label="Exceções e Erros (5xx / 4xx)" value={kpis.erros} tone={kpis.erros > 0 ? 'danger' : 'neutral'} />
-        <KpiCard icon={<AlertUrgent24Regular />} label="Alertas de Infraestrutura" value={kpis.avisos} tone={kpis.avisos > 0 ? 'warning' : 'neutral'} />
+      <section className={s.kpiGrid} aria-label="Resumo dos eventos">
+        <KpiCard icon={<Shield24Regular />} label="Volume Total de Eventos" value={kpis.total} />
+        <KpiCard icon={<ErrorCircle24Regular />} label="Exceções e Erros" value={kpis.erros} tone={kpis.erros > 0 ? 'danger' : 'neutral'} />
+        <KpiCard icon={<AlertUrgent24Regular />} label="Alertas e Avisos" value={kpis.avisos} tone={kpis.avisos > 0 ? 'warning' : 'neutral'} />
         <KpiCard icon={<CheckmarkCircle24Regular />} label="Requisições com Sucesso" value={kpis.sucesso} tone={kpis.sucesso > 0 ? 'success' : 'neutral'} />
-      </div>
+      </section>
 
       <div className={s.contentLayout}>
         <div className={s.mainContent}>
           <div className={s.filterBar}>
-            <Input contentBefore={<Search24Regular />} placeholder="Filtrar por mensagem, rota ou verbo HTTP..." value={busca} onChange={e => setBusca(e.target.value)} style={{ minWidth: '260px', flex: 1 }} />
-            <Select value={filtroNivel} onChange={e => setFiltroNivel(e.target.value as FilterLevel)}>
+            <Input contentBefore={<Search24Regular />} placeholder="Filtrar por mensagem, rota, verbo HTTP ou console..." aria-label="Filtrar eventos por mensagem, rota, método ou console" value={busca} onChange={e => setBusca(e.target.value)} style={{ minWidth: '260px', flex: 1 }} />
+            <Select aria-label="Filtrar por nível do evento" value={filtroNivel} onChange={e => setFiltroNivel(e.target.value as FilterLevel)}>
               <option value="all">Todos os Níveis</option>
               <option value="error">Erros (ERROR)</option>
               <option value="warn">Avisos (WARN)</option>
@@ -164,7 +170,8 @@ export default function GerenciamentoEventos() {
           </div>
 
           <div ref={bodyRef} className={s.tableWrap}>
-            <DataGrid items={filtrados} columns={columns} sortable resizableColumns columnSizingOptions={{ timestamp: { defaultWidth: 125, minWidth: 125 }, metodo: { defaultWidth: 80, minWidth: 80 }, status: { defaultWidth: 70, minWidth: 70 }, duracao: { defaultWidth: 90, minWidth: 90 }, acoes: { defaultWidth: 48, minWidth: 48 }, mensagem: { minWidth: 250 } }}>
+            <span className={s.srOnly} role="status" aria-live="polite">{`${filtrados.length} evento${filtrados.length !== 1 ? 's' : ''} na tabela`}</span>
+            <DataGrid aria-label="Eventos registrados" items={filtrados} columns={columns} sortable resizableColumns columnSizingOptions={{ timestamp: { defaultWidth: 125, minWidth: 125 }, metodo: { defaultWidth: 80, minWidth: 80 }, status: { defaultWidth: 70, minWidth: 70 }, duracao: { defaultWidth: 90, minWidth: 90 }, acoes: { defaultWidth: 48, minWidth: 48 }, mensagem: { minWidth: 250 } }}>
               <DataGridHeader>
                 <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
               </DataGridHeader>
@@ -177,12 +184,13 @@ export default function GerenciamentoEventos() {
               </DataGridBody>
             </DataGrid>
             {filtrados.length === 0 && (
-              <EmptyState message={logs.length === 0 ? 'Nenhum evento registrado ainda. As requisições aparecem aqui assim que a API for chamada.' : 'Nenhum evento corresponde aos filtros.'} />
+              <EmptyState message={logs.length === 0 ? 'Nenhum evento registrado ainda. As chamadas à API e as mensagens do console do navegador aparecem aqui.' : 'Nenhum evento corresponde aos filtros.'} />
             )}
           </div>
         </div>
 
-        <div className={s.sidebar}>
+        <aside className={s.sidebar} aria-label="Detalhes do evento">
+          <span className={s.srOnly} role="status" aria-live="polite">{logSelecionado ? `Mostrando detalhes do evento das ${fmtTimestamp(logSelecionado.ts)}` : ''}</span>
           {logSelecionado ? (
             <>
               <div>
@@ -226,7 +234,7 @@ export default function GerenciamentoEventos() {
               <Text size={300}>Selecione uma linha de evento ou log na tabela lateral para inspecionar os cabeçalhos HTTP, stacktraces e objetos JSON.</Text>
             </div>
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );

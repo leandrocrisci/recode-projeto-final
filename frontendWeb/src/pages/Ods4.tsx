@@ -171,6 +171,8 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
   },
   sources: { display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '8px', borderTop: `1px solid ${tokens.colorNeutralStroke2}` },
+  // Texto só para leitores de tela: invisível na tela, mas lido em voz alta
+  srOnly: { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 },
 });
 
 const ICONES_DESAFIO: Record<string, ReactNode> = {
@@ -195,7 +197,7 @@ function MetaCard({ meta }: { meta: Meta }) {
   return (
     <article className={s.card}>
       <div className={s.cardHead}>
-        <Badge appearance="filled" color="brand" size="large">{meta.id}</Badge>
+        <Badge appearance="filled" color="brand" size="large"><span className={s.srOnly}>Meta </span>{meta.id}</Badge>
         <Text size={200} className={s.muted}>Prazo: {meta.prazo}</Text>
       </div>
       <Text className={s.cardTitle}>{meta.titulo}</Text>
@@ -254,7 +256,7 @@ export default function Ods4() {
 
       {/* ── Abas ─────────────────────────────────────────────────────────── */}
       <div className={s.tabsWrap}>
-        <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as TabId)} size="large">
+        <TabList aria-label="Seções da página ODS 4" selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as TabId)} size="large">
           <Tab value="visao" icon={<Globe24Regular />}>Visão geral</Tab>
           <Tab value="global" icon={<DataTrending24Regular />}>Cenário global</Tab>
           <Tab value="brasil" icon={<Location24Regular />}>Brasil</Tab>
@@ -265,7 +267,7 @@ export default function Ods4() {
 
       {/* ── Visão geral ──────────────────────────────────────────────────── */}
       {tab === 'visao' && (
-        <div className={s.panel}>
+        <div className={s.panel} role="tabpanel" aria-label="Visão geral">
           <SectionHead title="O que o ODS 4 propõe" />
           <Body1>
             O <strong>ODS 4</strong> integra a Agenda 2030 da ONU. Diferente das metas anteriores do milênio, que
@@ -308,7 +310,7 @@ export default function Ods4() {
 
       {/* ── Cenário global ───────────────────────────────────────────────── */}
       {tab === 'global' && (
-        <div className={s.panel}>
+        <div className={s.panel} role="tabpanel" aria-label="Cenário global">
           <SectionHead
             title="Cenário global"
             subtitle="A conclusão escolar avança, mas a população fora da escola voltou a crescer."
@@ -390,7 +392,7 @@ export default function Ods4() {
 
       {/* ── Brasil ───────────────────────────────────────────────────────── */}
       {tab === 'brasil' && (
-        <div className={s.panel}>
+        <div className={s.panel} role="tabpanel" aria-label="Brasil">
           <SectionHead
             title="Brasil"
             subtitle="Módulo Educação da PNAD Contínua (IBGE), com dados de 2025 divulgados em 19/06/2026."
@@ -401,7 +403,13 @@ export default function Ods4() {
             subtitle="Resultados de 2025 em comparação com as metas do Plano Nacional de Educação (PNE)"
             source="IBGE, PNAD Contínua Educação 2025"
           >
-            <div className={s.rings}>
+            {/* Resumo falado dos três anéis: o leitor de tela ouve valor, meta e situação numa frase só */}
+            <ul className={s.srOnly}>
+              <li>Crianças de 6 a 14 anos no ensino fundamental: 96,1%. Meta do PNE de 95%, atingida.</li>
+              <li>Jovens de 15 a 17 anos no ensino médio: 80,6%. Meta do PNE de 85%, ainda não atingida; faltam 4,4 pontos.</li>
+              <li>Adultos de 25 anos ou mais com o ensino médio completo: 57,4%, em alta desde 2016.</li>
+            </ul>
+            <div className={s.rings} aria-hidden="true">
               <RingChart value={96.1} display="96,1%" label="Crianças de 6 a 14 anos no ensino fundamental" sublabel="Meta do PNE: 95%, atingida" tone="success" />
               <RingChart value={80.6} display="80,6%" label="Jovens de 15 a 17 anos no ensino médio" sublabel="Meta do PNE: 85%, ainda não atingida" tone="warning" />
               <RingChart value={57.4} display="57,4%" label="Adultos (25+) com o ensino médio completo" sublabel="Em 2016 eram menos: a escolaridade avança" tone="brand" />
@@ -483,7 +491,7 @@ export default function Ods4() {
 
       {/* ── Metas ────────────────────────────────────────────────────────── */}
       {tab === 'metas' && (
-        <div className={s.panel}>
+        <div className={s.panel} role="tabpanel" aria-label="Metas">
           <SectionHead
             title="As dez metas do ODS 4"
             subtitle="Sete metas de resultado e três meios de implementação, cada uma com um dado recente."
@@ -497,7 +505,7 @@ export default function Ods4() {
 
       {/* ── Desafios e caminhos ──────────────────────────────────────────── */}
       {tab === 'caminhos' && (
-        <div className={s.panel}>
+        <div className={s.panel} role="tabpanel" aria-label="Desafios e caminhos">
           <SectionHead title="Desafios para a implementação" />
           <div className={s.grid2}>
             {desafios.map(d => (
@@ -527,11 +535,11 @@ export default function Ods4() {
       )}
 
       {/* ── Fontes ───────────────────────────────────────────────────────── */}
-      <footer className={s.sources}>
+      <footer className={s.sources} aria-label="Fontes dos dados">
         <Text size={200} weight="semibold">Fontes</Text>
         {Object.values(FONTES).map(f => (
           <Text key={f.url} size={200}>
-            <Link href={f.url} target="_blank" rel="noreferrer">{f.nome}</Link>
+            <Link href={f.url} target="_blank" rel="noreferrer">{f.nome}<span className={s.srOnly}> (abre em nova aba)</span></Link>
           </Text>
         ))}
       </footer>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
   <title id="title">Arquitetura atual do Portal de Gestão Educacional</title>
-  <desc id="desc">Frontend React no Render consome API Spring Boot no Render, que persiste os dados em PostgreSQL. A tela de produtos pode ler CSV público do Google Sheets.</desc>
+  <desc id="desc">Frontend React no Render consome a API Spring Boot no Render, que persiste dados no PostgreSQL. Cadastros podem importar CSV público do Google Sheets. O diagrama também mostra as variáveis de configuração do deploy.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#526579"/></marker>
     <style>
@@ -14,24 +14,25 @@
   <text x="192" y="178" text-anchor="middle" class="body">React 19 · TypeScript · Vite</text>
   <text x="192" y="207" text-anchor="middle" class="body">Fluent UI v9 · React Router</text>
   <text x="192" y="236" text-anchor="middle" class="body">Axios · /api</text>
-  <text x="192" y="277" text-anchor="middle" class="small">Produtos · Escolas · Alunos</text>
-  <text x="192" y="300" text-anchor="middle" class="small">Dashboard · Documentação</text>
+  <text x="192" y="277" text-anchor="middle" class="small">Cadastros · importação Sheets · dashboards</text>
+  <text x="192" y="300" text-anchor="middle" class="small">DevLogger: rede · console · auditoria</text>
   <rect x="35" y="382" width="315" height="72" rx="12" fill="#d5e8d4" stroke="#82b366" class="node"/>
   <text x="192" y="412" text-anchor="middle" class="body" font-weight="700">Google Sheets</text>
-  <text x="192" y="436" text-anchor="middle" class="small">CSV público para importação opcional</text>
+  <text x="192" y="432" text-anchor="middle" class="small">CSV público por gid · prévia e validação</text>
   <rect x="445" y="105" width="325" height="255" rx="14" fill="#d5e8d4" stroke="#82b366" class="node"/>
   <text x="607" y="145" text-anchor="middle" class="head">Backend REST</text>
   <text x="607" y="178" text-anchor="middle" class="body">Java 21 · Spring Boot 3.3</text>
   <text x="607" y="207" text-anchor="middle" class="body">Controller → Service → Repository</text>
   <text x="607" y="236" text-anchor="middle" class="body">Spring Data JPA · Hibernate</text>
   <text x="607" y="277" text-anchor="middle" class="small">Rotas sob /api/** · CORS configurável</text>
-  <text x="607" y="300" text-anchor="middle" class="small">Render Web Service</text>
+  <text x="607" y="277" text-anchor="middle" class="small">Render Docker Web Service</text>
+  <text x="607" y="300" text-anchor="middle" class="small">SPRING_DATASOURCE_* · CORS_ALLOWED_ORIGINS</text>
   <rect x="865" y="105" width="300" height="255" rx="14" fill="#fff2cc" stroke="#d6b656" class="node"/>
   <text x="1015" y="145" text-anchor="middle" class="head">Banco de dados</text>
   <text x="1015" y="185" text-anchor="middle" class="body">PostgreSQL</text>
   <text x="1015" y="215" text-anchor="middle" class="body">Banco recodedatabase</text>
   <text x="1015" y="255" text-anchor="middle" class="small">Schema criado pelo script PostgreSQL</text>
-  <text x="1015" y="280" text-anchor="middle" class="small">Hibernate ddl-auto=none</text>
+  <text x="1015" y="280" text-anchor="middle" class="small">ddl-auto=none · jdbc:postgresql://...</text>
   <text x="1015" y="320" text-anchor="middle" class="small">Render Database</text>
   <path d="M350 220H438" fill="none" stroke="#526579" stroke-width="3" marker-end="url(#arrow)"/>
   <text x="394" y="205" text-anchor="middle" class="small">HTTPS</text>
@@ -39,5 +40,5 @@
   <text x="814" y="205" text-anchor="middle" class="small">JPA / JDBC</text>
   <path d="M192 382V368H192V367" fill="none" stroke="#107c10" stroke-width="3" marker-end="url(#arrow)"/>
   <text x="204" y="375" class="small">CSV</text>
-  <text x="600" y="475" text-anchor="middle" class="small">Importação de produtos: leitura e prévia no frontend; confirmação cria registros via POST /api/produtos.</text>
+  <text x="600" y="475" text-anchor="middle" class="small">Render Static Site: VITE_API_URL=https://&lt;backend&gt;.onrender.com/api · variáveis VITE_ exigem novo build do frontend.</text>
 </svg>

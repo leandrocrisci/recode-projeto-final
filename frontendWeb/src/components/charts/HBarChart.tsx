@@ -3,7 +3,11 @@ import { TONE_FILL, useReady } from './shared';
 import type { ChartTone } from './shared';
 
 export interface HBarItem {
+  /** Chave estável da linha. Use quando dois rótulos podem se repetir. */
+  id?: string | number;
   label: string;
+  /** Linha de apoio sob o rótulo (ex.: "3 de 5 escolas avaliadas"). */
+  detail?: string;
   value: number;
   /** Texto exibido à direita (ex.: "84,5%"). Se omitido, usa o valor. */
   display?: string;
@@ -35,7 +39,9 @@ const useStyles = makeStyles({
     alignItems: 'center',
     gap: '10px',
   },
+  labelCell: { display: 'flex', flexDirection: 'column', minWidth: 0 },
   label: { color: tokens.colorNeutralForeground2, lineHeight: tokens.lineHeightBase200 },
+  detail: { color: tokens.colorNeutralForeground3, lineHeight: tokens.lineHeightBase100 },
   track: {
     position: 'relative',
     height: '12px',
@@ -80,8 +86,11 @@ export function HBarChart({ groups, max = 100, marker, ariaLabel }: HBarChartPro
         <div key={g.title ?? gi} className={s.group}>
           {g.title && <Text size={200} className={s.groupTitle}>{g.title}</Text>}
           {g.items.map(item => (
-            <div key={item.label} className={s.row}>
-              <Text size={200} className={s.label}>{item.label}</Text>
+            <div key={item.id ?? item.label} className={s.row}>
+              <div className={s.labelCell}>
+                <Text size={200} className={s.label}>{item.label}</Text>
+                {item.detail && <Text size={100} className={s.detail}>{item.detail}</Text>}
+              </div>
               <div className={s.track}>
                 <div
                   className={s.fill}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge, Tooltip, Avatar, Button,
+  makeStyles, mergeClasses, tokens, Text, Badge, Tooltip, Avatar, Button,
   Menu, MenuTrigger, MenuPopover, MenuList, MenuGroupHeader, MenuItemRadio,
 } from '@fluentui/react-components';
 import {
@@ -10,10 +10,12 @@ import {
   WeatherMoon24Regular,
   WeatherSunny24Regular,
   ChevronDown16Regular,
+  Navigation24Regular,
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import type { UserRole } from '../types';
+import { NAVBAR_HEIGHT, alternarMenu, useMenuLateral } from '../hooks/useMenuLateral';
 
 const PERFIS: Record<UserRole, { label: string; badge: string }> = {
   user: { label: 'Usuário', badge: 'USER' },
@@ -25,16 +27,25 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: '56px',
+    height: `${NAVBAR_HEIGHT}px`,
     padding: '0 20px',
     backgroundColor: tokens.colorBrandBackground,
     color: tokens.colorNeutralForegroundOnBrand,
     gap: '16px',
     flexShrink: 0,
     boxShadow: tokens.shadow4,
+    '@media (max-width: 768px)': { padding: '0 8px', gap: '4px' },
+  },
+  esquerda: { display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 },
+  menuBtn: {
+    color: tokens.colorNeutralForegroundOnBrand,
+    flexShrink: 0,
+    ':hover': { backgroundColor: 'rgba(255,255,255,0.15)', color: tokens.colorNeutralForegroundOnBrand },
+    ':hover:active': { backgroundColor: 'rgba(255,255,255,0.22)', color: tokens.colorNeutralForegroundOnBrand },
   },
   brand: {
     display: 'flex',
+    minWidth: 0,
     alignItems: 'center',
     gap: '10px',
     textDecoration: 'none',
@@ -46,7 +57,14 @@ const useStyles = makeStyles({
     fontWeight: '600',
     fontSize: '16px',
     color: tokens.colorNeutralForegroundOnBrand,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
+  // Celular: nome curto, para o título não quebrar em três linhas
+  tituloCompleto: { '@media (max-width: 560px)': { display: 'none' } },
+  tituloCurto: { display: 'none', '@media (max-width: 560px)': { display: 'inline' } },
+  ocultarNoCelular: { '@media (max-width: 560px)': { display: 'none' } },
   right: {
     display: 'flex',
     alignItems: 'center',
@@ -86,13 +104,26 @@ export default function Navbar() {
   const { role, setRole, isAdmin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const perfil = PERFIS[role];
+  const { aberto } = useMenuLateral();
 
   return (
     <header className={s.header}>
-      <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para o Dashboard">
-        <BookOpen24Regular style={{ fontSize: '24px' }} />
-        <Text className={s.title}>Recode — Avaliação Escolas</Text>
-      </Link>
+      <div className={s.esquerda}>
+        <Button
+          appearance="transparent"
+          className={s.menuBtn}
+          icon={<Navigation24Regular />}
+          onClick={alternarMenu}
+          aria-label={aberto ? 'Esconder o menu lateral' : 'Mostrar o menu lateral'}
+          aria-expanded={aberto}
+          aria-controls="menu-lateral"
+        />
+        <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para o Dashboard">
+          <BookOpen24Regular style={{ fontSize: '24px', flexShrink: 0 }} />
+          <Text className={mergeClasses(s.title, s.tituloCompleto)}>Recode — Avaliação Escolas</Text>
+          <Text className={mergeClasses(s.title, s.tituloCurto)}>Recode</Text>
+        </Link>
+      </div>
 
       <div className={s.right}>
         {/* Perfil de acesso: avatar, papel atual e troca de papel num único menu */}
@@ -110,8 +141,8 @@ export default function Navbar() {
               icon={<Avatar name={perfil.label} color={isAdmin ? 'gold' : 'blue'} size={28} />}
               aria-label={`Perfil atual: ${perfil.label}. Abrir menu de perfil`}
             >
-              <span className={s.profileText}>{perfil.label}</span>
-              <Badge appearance="filled" color={isAdmin ? 'warning' : 'informative'} size="medium">
+              <span className={mergeClasses(s.profileText, s.ocultarNoCelular)}>{perfil.label}</span>
+              <Badge className={s.ocultarNoCelular} appearance="filled" color={isAdmin ? 'warning' : 'informative'} size="medium">
                 {perfil.badge}
               </Badge>
               <ChevronDown16Regular />

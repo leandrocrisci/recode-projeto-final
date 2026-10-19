@@ -21,6 +21,8 @@ export interface EstatisticasEscola {
 export interface EscolaAgregada extends Escola {
   latitude: number | null;
   longitude: number | null;
+  cidade?: string;
+  estado?: string;
   enderecoFormatado: string;
   estatisticas: EstatisticasEscola;
 }
@@ -114,6 +116,8 @@ export function agregarEscolas(
       ...esc,
       latitude: paraNumero(end?.latitude),
       longitude: paraNumero(end?.longitude),
+      cidade: end?.cidade ?? 'Não informado',
+      estado: end?.estado ?? 'Não informado',
       enderecoFormatado: formatarEndereco(end),
       estatisticas: calcularEstatisticas(alunosPorEscola.get(esc.id) ?? [], notas),
     };

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  makeStyles, tokens, Text, Badge,
+  makeStyles, mergeClasses, tokens, Text, Badge,
 } from '@fluentui/react-components';
 import {
   Home24Regular, Home24Filled,
@@ -22,6 +22,7 @@ import {
   bundleIcon,
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
+import { NAVBAR_HEIGHT, fecharMenu, fecharMenuNoCelular, useMenuLateral } from '../hooks/useMenuLateral';
 
 const HomeIcon      = bundleIcon(Home24Filled,              Home24Regular);
 const EscolaIcon    = bundleIcon(Building24Filled,          Building24Regular);
@@ -50,6 +51,35 @@ const useStyles = makeStyles({
     padding: '12px 8px',
     gap: '2px',
     overflowY: 'auto',
+  },
+  // Computador: menu recolhido some do layout
+  navRecolhido: { display: 'none' },
+  // Celular: gaveta sobre o conteúdo, logo abaixo da Navbar
+  navGaveta: {
+    position: 'fixed',
+    top: `${NAVBAR_HEIGHT}px`,
+    bottom: 0,
+    left: 0,
+    zIndex: 1000,
+    width: 'min(280px, 85vw)',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    boxShadow: tokens.shadow16,
+    overscrollBehavior: 'contain',
+    transitionProperty: 'transform, visibility',
+    transitionDuration: '200ms',
+    transitionTimingFunction: 'ease-out',
+    '@media (prefers-reduced-motion: reduce)': { transitionDuration: '0s' },
+  },
+  navGavetaFechada: { transform: 'translateX(-100%)', visibility: 'hidden' },
+  fundoGaveta: {
+    position: 'fixed',
+    top: `${NAVBAR_HEIGHT}px`,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   section: {
     paddingLeft: '8px',
@@ -98,6 +128,7 @@ function NavItem({ to, icon: Icon, label, badge, title }: NavItemProps) {
       to={to}
       end={to === '/'}
       title={title}
+      onClick={fecharMenuNoCelular}
       className={({ isActive }) => `${s.link}${isActive ? ' ' + s.active : ''}`}
     >
       <Icon />
@@ -110,9 +141,27 @@ function NavItem({ to, icon: Icon, label, badge, title }: NavItemProps) {
 export default function Sidebar() {
   const s = useStyles();
   const { isAdmin } = useAuth();
+  const { aberto, desktop } = useMenuLateral();
+
+  // Esc fecha a gaveta no celular (teclado externo, acessibilidade)
+  useEffect(() => {
+    if (desktop || !aberto) return;
+    const aoTecla = (e: KeyboardEvent) => { if (e.key === 'Escape') fecharMenu(); };
+    window.addEventListener('keydown', aoTecla);
+    return () => window.removeEventListener('keydown', aoTecla);
+  }, [desktop, aberto]);
+
+  const classeNav = mergeClasses(
+    s.nav,
+    desktop && !aberto && s.navRecolhido,
+    !desktop && s.navGaveta,
+    !desktop && !aberto && s.navGavetaFechada,
+  );
 
   return (
-    <nav className={s.nav} aria-label="Navegação principal">
+    <>
+    {!desktop && aberto && <div className={s.fundoGaveta} onClick={fecharMenu} aria-hidden="true" />}
+    <nav id="menu-lateral" className={classeNav} aria-label="Navegação principal">
       <Text className={s.section}>Navegação</Text>
       <NavItem to="/"            icon={HomeIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
@@ -146,5 +195,6 @@ export default function Sidebar() {
       <NavItem to="/docs" icon={DocsIcon} label="Documentação" />
       <NavItem to="/agradecimentos" icon={AgradIcon} label="Agradecimentos" />
     </nav>
+    </>
   );
 }

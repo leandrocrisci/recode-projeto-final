@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { APIProvider, AdvancedMarker, ColorScheme, Map, InfoWindow, Circle } from '@vis.gl/react-google-maps';
 import { Spinner, Text, Badge, makeStyles, tokens, Button, Input, MessageBar, MessageBarBody, FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { Building24Regular, VehicleBus24Regular, MyLocation24Regular, Star24Regular, Clock24Regular, People24Regular, Location24Regular, Search24Regular, ArrowLeft24Regular } from '@fluentui/react-icons';
@@ -14,11 +14,18 @@ import type { EscolaGeo } from '../utils/agregarEscolas';
 const NAVBAR_HEIGHT = 56;
 
 const useStyles = makeStyles({
-  root: { display: 'flex', flexDirection: 'column', width: '100%', height: `calc(100vh - ${NAVBAR_HEIGHT}px)` },
-  kpiStrip: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', padding: '12px 16px', backgroundColor: tokens.colorNeutralBackground2, borderBottom: `1px solid ${tokens.colorNeutralStroke2}` },
-  container: { display: 'flex', flex: 1, minHeight: 0, width: '100%' },
-  mapBox: { flex: 1, height: '100%' },
-  sidebar: { flexShrink: 0, width: '350px', borderLeft: `1px solid ${tokens.colorNeutralStroke1}`, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', backgroundColor: tokens.colorNeutralBackground1 },
+  root: { display: 'flex', flexDirection: 'column', width: '100%', height: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
+    // Celular: a página rola normalmente em vez de travar na altura da tela
+    '@media (max-width: 768px)': { height: 'auto', minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)` } },
+  kpiStrip: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', padding: '12px 16px', backgroundColor: tokens.colorNeutralBackground2, borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    '@media (max-width: 768px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', padding: '8px' } },
+  container: { display: 'flex', flex: 1, minHeight: 0, width: '100%',
+    // Celular: o painel lateral desce para baixo do mapa
+    '@media (max-width: 768px)': { flexDirection: 'column', flex: 'none' } },
+  mapBox: { flex: 1, height: '100%',
+    '@media (max-width: 768px)': { flex: 'none', height: '55vh', minHeight: '300px' } },
+  sidebar: { flexShrink: 0, width: '350px', borderLeft: `1px solid ${tokens.colorNeutralStroke1}`, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', backgroundColor: tokens.colorNeutralBackground1,
+    '@media (max-width: 768px)': { width: '100%', boxSizing: 'border-box', borderLeft: 'none', borderTop: `1px solid ${tokens.colorNeutralStroke1}`, overflowY: 'visible' } },
   statRow: { display: 'flex', alignItems: 'center', gap: '10px', margin: '6px 0', clear: 'both' },
   escolaList: { display: 'flex', flexDirection: 'column', gap: '6px' },
   escolaItem: {
@@ -33,7 +40,9 @@ const useStyles = makeStyles({
   escolaMeta: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
   infoWindowWrap: { padding: '4px', maxWidth: '240px' },
   customPanel: { display: 'block', padding: '12px', border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium, backgroundColor: tokens.colorNeutralBackground1, height: 'auto', minHeight: 'fit-content' },
-  panelTitle: { fontSize: '13px', fontWeight: '600', color: tokens.colorNeutralForeground1, display: 'block', marginBottom: '6px', borderBottom: `1px solid ${tokens.colorNeutralStroke2}`, paddingBottom: '4px' }
+  panelTitle: { fontSize: '13px', fontWeight: '600', color: tokens.colorNeutralForeground1, display: 'block', marginBottom: '6px', borderBottom: `1px solid ${tokens.colorNeutralStroke2}`, paddingBottom: '4px' },
+  // Texto só para leitores de tela: invisível na tela, mas lido em voz alta
+  srOnly: { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 },
 });
 
 const BRASILIA_CENTER = { lat: -14.235004, lng: -51.92528 };
@@ -50,6 +59,14 @@ const toneDaFaixa = (f: ReturnType<typeof faixaNota>): KpiTone => (f === 'inform
 
 const rotuloNota = (nota: string) => (nota === SEM_AVALIACAO ? 'Sem avaliação' : `★ ${nota}`);
 
+// Frase completa da nota para leitores de tela (a estrela e a cor sozinhas não dizem nada)
+const descreverNota = (nota: string) => {
+  if (nota === SEM_AVALIACAO) return 'Escola ainda sem avaliação de qualidade';
+  const n = parseFloat(nota);
+  const faixa = n >= 4 ? 'boa' : n >= 2.5 ? 'requer atenção' : 'crítica';
+  return `Nota de qualidade ${nota.replace('.', ',')} de 5, ${faixa}`;
+};
+
 export default function Dashboard() {
   const s = useStyles();
   const { escolas, loading, error } = useEscolasAgregadas();
@@ -65,6 +82,7 @@ export default function Dashboard() {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   }, [escolasNoMapa, busca]);
   const [escolaSelecionada, setEscolaSelecionada] = useState<EscolaGeo | null>(null);
+  const painelRef = useRef<HTMLDivElement>(null);
   
   // NOVO: Estados de controle dinâmico da câmera do Google Maps
   const [mapCenter, setMapCenter] = useState(BRASILIA_CENTER);
@@ -83,6 +101,10 @@ export default function Dashboard() {
   // NOVO: Função que gerencia o clique e afasta a câmera para abrir o campo de visão da bolha
   const handleMarkerClick = (escola: EscolaGeo) => {
     setEscolaSelecionada(escola);
+    // No celular o painel fica abaixo do mapa: rola até ele só quando a escolha veio da lista
+    if (window.matchMedia('(max-width: 768px)').matches && painelRef.current && window.scrollY > painelRef.current.offsetTop - 100) {
+      setTimeout(() => painelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
     
     // Desloca o centro do mapa levemente para baixo (lat - 0.04) para empurrar o InfoWindow para cima
     setMapCenter({
@@ -111,7 +133,7 @@ export default function Dashboard() {
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
       <div className={s.root}>
-        <div className={s.kpiStrip}>
+        <section className={s.kpiStrip} aria-label="Resumo geral das escolas">
           <KpiCard
             icon={<Building24Regular />}
             label="Escolas"
@@ -137,12 +159,12 @@ export default function Dashboard() {
             value={`${kpis.percentualRural}%`}
             hint={`${kpis.alunosRurais} de ${kpis.totalAlunos} alunos`}
           />
-        </div>
+        </section>
 
         <div className={s.container}>
         
           {/* Caixa do Mapa controlada pelos estados reativos de zoom e centro */}
-          <div className={s.mapBox}>
+          <div className={s.mapBox} role="region" aria-label={`Mapa com ${escolasNoMapa.length} escolas. Cada marcador abre os indicadores da escola`}>
             <Map 
               mapId={MAP_ID} 
               colorScheme={isDark ? ColorScheme.DARK : ColorScheme.LIGHT} 
@@ -156,7 +178,8 @@ export default function Dashboard() {
                   key={escola.id}
                   position={{ lat: Number(escola.latitude), lng: Number(escola.longitude) }}
                   onClick={() => handleMarkerClick(escola)} // Dispara o novo gerenciador de foco e afastamento
-                  title={escola.nome}
+                  // O título vira o nome do marcador para leitores de tela e teclado
+                  title={`${escola.nome}, ${escola.tipo}. ${descreverNota(escola.estatisticas.notaQualidadeMedia)}. ${escola.estatisticas.totalAlunos} alunos`}
                 />
               ))}
 
@@ -188,7 +211,8 @@ export default function Dashboard() {
                       <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
                         <Badge appearance="tint" color={corTipoEscola(escolaSelecionada.tipo)}>{escolaSelecionada.tipo}</Badge>
                         <Badge appearance="filled" color={getNotaColor(escolaSelecionada.estatisticas.notaQualidadeMedia)}>
-                          ★ {escolaSelecionada.estatisticas.notaQualidadeMedia}
+                          <span aria-hidden="true">{rotuloNota(escolaSelecionada.estatisticas.notaQualidadeMedia)}</span>
+                          <span className={s.srOnly}>{descreverNota(escolaSelecionada.estatisticas.notaQualidadeMedia)}</span>
                         </Badge>
                       </div>
                     </div>
@@ -199,7 +223,11 @@ export default function Dashboard() {
           </div>
 
           {/* Barra Lateral Direita */}
-          <div className={s.sidebar}>
+          <aside className={s.sidebar} ref={painelRef} aria-label={escolaSelecionada ? `Indicadores de ${escolaSelecionada.nome}` : 'Lista de escolas'}>
+            {/* Avisa o leitor de tela quando a escola escolhida muda */}
+            <span className={s.srOnly} role="status" aria-live="polite">
+              {escolaSelecionada ? `Mostrando indicadores de ${escolaSelecionada.nome}` : ''}
+            </span>
             {escolaSelecionada ? (
               <>
                 <Button appearance="subtle" icon={<ArrowLeft24Regular />} onClick={handleClosePanel} style={{ alignSelf: 'flex-start' }}>
@@ -220,7 +248,10 @@ export default function Dashboard() {
                     <Star24Regular style={{ color: tokens.colorPaletteYellowBackground3, flexShrink: 0 }} />
                     <Text size={200}>Avaliação Média: </Text>
                     <Badge appearance="filled" color={getNotaColor(escolaSelecionada.estatisticas.notaQualidadeMedia)}>
-                      {escolaSelecionada.estatisticas.notaQualidadeMedia} {escolaSelecionada.estatisticas.notaQualidadeMedia !== 'Sem avaliação' ? '/ 5.0' : ''}
+                      <span aria-hidden="true">
+                        {escolaSelecionada.estatisticas.notaQualidadeMedia} {escolaSelecionada.estatisticas.notaQualidadeMedia !== SEM_AVALIACAO ? '/ 5.0' : ''}
+                      </span>
+                      <span className={s.srOnly}>{descreverNota(escolaSelecionada.estatisticas.notaQualidadeMedia)}</span>
                     </Badge>
                   </div>
                 </div>
@@ -283,10 +314,14 @@ export default function Dashboard() {
                 <Input
                   contentBefore={<Search24Regular />}
                   placeholder="Buscar escola ou endereço..."
+                  aria-label="Buscar escola por nome ou endereço"
                   value={busca}
                   onChange={e => setBusca(e.target.value)}
                 />
 
+                <span className={s.srOnly} role="status" aria-live="polite">
+                  {`${listaFiltrada.length} escola${listaFiltrada.length !== 1 ? 's' : ''} encontrada${listaFiltrada.length !== 1 ? 's' : ''}`}
+                </span>
                 <div className={s.escolaList}>
                   {listaFiltrada.map(e => (
                     <button key={e.id} type="button" className={s.escolaItem} onClick={() => handleMarkerClick(e)}>
@@ -294,7 +329,8 @@ export default function Dashboard() {
                       <span className={s.escolaMeta}>
                         <Badge appearance="tint" size="small" color={corTipoEscola(e.tipo)}>{e.tipo}</Badge>
                         <Badge appearance="filled" size="small" color={getNotaColor(e.estatisticas.notaQualidadeMedia)}>
-                          {rotuloNota(e.estatisticas.notaQualidadeMedia)}
+                          <span aria-hidden="true">{rotuloNota(e.estatisticas.notaQualidadeMedia)}</span>
+                          <span className={s.srOnly}>{descreverNota(e.estatisticas.notaQualidadeMedia)}</span>
                         </Badge>
                         <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
                           {e.estatisticas.totalAlunos} aluno{e.estatisticas.totalAlunos !== 1 ? 's' : ''}
@@ -318,7 +354,7 @@ export default function Dashboard() {
                 )}
               </>
             )}
-          </div>
+          </aside>
 
         </div>
       </div>

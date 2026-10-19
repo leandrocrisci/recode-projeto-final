@@ -21,7 +21,7 @@ const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
   tableWrap: { border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium, overflow: 'hidden' },
   actionCell: { display: 'flex', gap: '6px' },
-  notaCell: { display: 'inline-flex', alignItems: 'center', gap: '8px' },
+  notaCell: { display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' },
 });
 
 const empty = { nota: '', comentario: '', dataAvaliacao: '', escolaId: '' };
@@ -130,7 +130,19 @@ const handleSubmit = async (ev: React.FormEvent) => {
       {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
-          <DataGrid items={avaliacoes} columns={columns} sortable resizableColumns>
+          <DataGrid
+            items={avaliacoes}
+            columns={columns}
+            sortable
+            resizableColumns
+            columnSizingOptions={{
+              escola: { defaultWidth: 240, minWidth: 160 },
+              nota:   { defaultWidth: 170, minWidth: 150 }, // 5 estrelas + "5/5"
+              data:   { defaultWidth: 130, minWidth: 110 },
+              coment: { minWidth: 240 },
+              acoes:  { defaultWidth: 100, minWidth: 90 },
+            }}
+          >
             <DataGridHeader><DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow></DataGridHeader>
             <DataGridBody<AvaliacaoQualidade>>{({ item, rowId }) => <DataGridRow<AvaliacaoQualidade> key={rowId}>{({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}</DataGridRow>}</DataGridBody>
           </DataGrid>

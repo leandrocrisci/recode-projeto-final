@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" role="img" aria-labelledby="title desc">
   <title id="title">Diagrama entidade-relacionamento do projeto</title>
-  <desc id="desc">Diagrama das onze entidades JPA e dos relacionamentos Many-to-one e one-to-one definidos nos modelos Java.</desc>
+  <desc id="desc">Diagrama das treze tabelas PostgreSQL do projeto e de suas chaves estrangeiras.</desc>
   <defs>
     <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9z" fill="#60758b"/></marker>
     <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#172b4d}.title{font-size:24px;font-weight:700}.entity{font-size:15px;font-weight:700}.rel{font-size:13px}.note{font-size:13px}.edge{fill:none;stroke:#60758b;stroke-width:2;marker-end:url(#arrow)}</style>
@@ -15,6 +15,10 @@
     <path d="M650 160H700V298H740"/><path d="M410 322H700V298H740"/>
     <path d="M180 330H200V535H1020V406"/><path d="M650 310H820V535H1020V406"/>
     <path d="M1055 176V350"/>
+    <path d="M650 148H920V458H740"/>
+    <path d="M650 148H700V568H500"/>
+    <path d="M410 300H455V568H500"/>
+    <path d="M650 298H690V148H500"/>
   </g>
   <g>
     <rect x="30" y="270" width="150" height="56" rx="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/><text x="105" y="304" text-anchor="middle" class="entity">Escola</text>
@@ -28,8 +32,11 @@
     <rect x="740" y="270" width="150" height="56" rx="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/><text x="815" y="304" text-anchor="middle" class="entity">ProgressoAluno</text>
     <rect x="980" y="120" width="150" height="56" rx="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/><text x="1055" y="154" text-anchor="middle" class="entity">Produto</text>
     <rect x="980" y="350" width="150" height="56" rx="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/><text x="1055" y="384" text-anchor="middle" class="entity">Pedido</text>
+    <rect x="740" y="430" width="170" height="56" rx="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/><text x="825" y="464" text-anchor="middle" class="entity">EnderecoAluno</text>
+    <rect x="500" y="540" width="170" height="56" rx="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/><text x="585" y="574" text-anchor="middle" class="entity">AvaliacaoAluno</text>
   </g>
-  <text x="600" y="565" text-anchor="middle" class="note">Cada seta representa 1:N da entidade de origem para a entidade dependente.</text>
-  <text x="600" y="590" text-anchor="middle" class="note">Escola ↔ EnderecoEscola é 1:1. O modelo mostra relações mapeadas nos modelos JPA.</text>
-  <text x="600" y="635" text-anchor="middle" class="rel">Relacionamentos: Escola–Curso/Aluno/Professor/Avaliações/Pedido · Curso–Aluno/Matrícula/Progresso/Avaliação · Aluno–Matrícula/Progresso · Produto/Professor–Pedido</text>
+  <text x="600" y="625" text-anchor="middle" class="note">13 tabelas PostgreSQL. Cada seta aponta para a tabela dependente; somente Escola–EnderecoEscola é 1:1.</text>
+  <text x="600" y="650" text-anchor="middle" class="note">Aluno–EnderecoAluno, Aluno–AvaliacaoAluno e Curso–AvaliacaoAluno são relações 1:N.</text>
+  <text x="600" y="680" text-anchor="middle" class="rel">Escola → Professor, Curso, Aluno, endereços, avaliações e Pedido · Curso → Aluno, avaliações, Matrícula e Progresso</text>
+  <text x="600" y="700" text-anchor="middle" class="rel">Professor → Curso e Pedido · Produto → Pedido</text>
 </svg>

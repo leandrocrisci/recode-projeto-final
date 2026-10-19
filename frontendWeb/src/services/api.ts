@@ -21,6 +21,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+const isWriteMethod = (method?: string) =>
+  ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method?.toUpperCase() ?? '');
 
 // ── Interceptor de requisição ────────────────────────────────────────────────
 
@@ -28,13 +30,25 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   (config as InternalAxiosRequestConfig & { _t: number })._t = Date.now();
 
   if (_addLog) {
+    const method = config.method?.toUpperCase();
+    const url = (config.baseURL ?? '') + (config.url ?? '');
     _addLog({
       level: 'info',
-      method: config.method?.toUpperCase(),
-      url: (config.baseURL ?? '') + (config.url ?? ''),
-      message: `→ ${config.method?.toUpperCase()} ${config.url}`,
+      source: 'network',
+      method,
+      url,
+      message: `→ ${method} ${config.url}`,
       detail: config.data ? JSON.stringify(config.data, null, 2) : undefined,
     });
+    if (isWriteMethod(method)) {
+      _addLog({
+        source: 'audit',
+        level: 'info',
+        method,
+        url,
+        message: `Operação de escrita enviada: ${method} ${config.url}`,
+      });
+    }
   }
 
   return config;
@@ -50,6 +64,7 @@ api.interceptors.response.use(
       const url = (cfg.baseURL ?? '') + (cfg.url ?? '');
 
       _addLog({
+        source: 'network',
         level: response.status < 300 ? 'success' : 'warn',
         method: cfg.method?.toUpperCase(),
         url,
@@ -61,6 +76,16 @@ api.interceptors.response.use(
           catch { return String(response.data); }
         })(),
       });
+      if (isWriteMethod(cfg.method)) {
+        _addLog({
+          source: 'audit',
+          level: 'success',
+          method: cfg.method?.toUpperCase(),
+          url,
+          status: response.status,
+          message: `Operação de escrita concluída: ${cfg.method?.toUpperCase()} ${cfg.url} (${response.status})`,
+        });
+      }
     }
     return response;
   },
@@ -81,6 +106,7 @@ api.interceptors.response.use(
       }
 
       _addLog({
+        source: 'network',
         level: 'error',
         method: cfg?.method?.toUpperCase(),
         url,
@@ -91,6 +117,17 @@ api.interceptors.response.use(
           : `✗ NETWORK ERROR — ${cfg?.method?.toUpperCase()} ${cfg?.url ?? url}`,
         detail,
       });
+      if (isWriteMethod(cfg?.method)) {
+        _addLog({
+          source: 'audit',
+          level: 'error',
+          method: cfg?.method?.toUpperCase(),
+          url,
+          status,
+          message: `Falha em operação de escrita: ${cfg?.method?.toUpperCase()} ${cfg?.url ?? url}`,
+          detail: status ? `Resposta HTTP ${status}` : error.message,
+        });
+      }
     }
     return Promise.reject(error);
   },

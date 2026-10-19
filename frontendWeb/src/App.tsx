@@ -48,7 +48,9 @@ function LoggerBridge() {
   const { addLog } = useLogs();
   useEffect(() => {
     registerLogger(addLog);
-    return () => registerLogger(() => {}); // limpa ao desmontar
+    return () => {
+      registerLogger(() => {});
+    };
   }, [addLog]);
   return null;
 }

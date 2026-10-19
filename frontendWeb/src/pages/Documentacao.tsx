@@ -18,6 +18,7 @@ import {
   Warning16Regular,
   Info16Regular,
 } from '@fluentui/react-icons';
+import iaMarkdown from '../../../IA.md?raw';
 
 // ─── Estilos ────────────────────────────────────────────────────────────────
 
@@ -231,6 +232,8 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorStatusSuccessBackground1,
     display: 'flex', gap: '8px',
   },
+  // Texto só para leitores de tela: invisível na tela, mas lido em voz alta
+  srOnly: { position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 },
 });
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
@@ -319,17 +322,25 @@ const seedData = [
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────────
 
+// Explica em palavras a escala de cada campo de nota no diagrama
+const descreverNotaCampo = (campo: string) => {
+  if (!campo.startsWith('nota')) return '';
+  if (campo.includes('0-10')) return '. Nota de 0 a 10 dada pelo aluno ao curso; quanto maior, melhor.';
+  if (campo.includes('1-5')) return '. Nota de 1 a 5 da qualidade da escola: 4 ou mais é boa, de 2,5 a 3,9 requer atenção, abaixo de 2,5 é crítica.';
+  return '';
+};
+
 function ErTable({ t }: { t: typeof tabelas[0] }) {
   const s = useStyles();
   return (
-    <div className={s.erBox}>
+    <div className={s.erBox} role="group" aria-label={`Tabela ${t.nome}`}>
       <div className={s.erBoxHeader}>{t.nome}</div>
-      <div className={s.erField}><span className={s.erPk}>PK</span> <span>{t.pk} BIGINT AUTO_INCREMENT</span></div>
+      <div className={s.erField}><span className={s.erPk} aria-hidden="true">PK</span><span className={s.srOnly}>Chave primária:</span> <span>{t.pk} BIGINT AUTO_INCREMENT</span></div>
       {t.campos.map(c => (
-        <div key={c} className={s.erField}><span style={{ width: 16 }} /> <span>{c}</span></div>
+        <div key={c} className={s.erField}><span style={{ width: 16 }} aria-hidden="true" /> <span>{c}</span>{descreverNotaCampo(c) && <span className={s.srOnly}>{descreverNotaCampo(c)}</span>}</div>
       ))}
       {t.fks.map(fk => (
-        <div key={fk} className={s.erField}><span className={s.erFk}>FK</span> <span>{fk}</span></div>
+        <div key={fk} className={s.erField}><span className={s.erFk} aria-hidden="true">FK</span><span className={s.srOnly}>Chave estrangeira:</span> <span>{fk}</span></div>
       ))}
     </div>
   );
@@ -340,7 +351,9 @@ function MethodBadge({ m, s }: { m: string; s: ReturnType<typeof useStyles> }) {
     m === 'GET' ? s.get :
     m === 'POST' ? s.post :
     m === 'PUT' ? s.put : s.del;
-  return <span className={`${s.method} ${cls}`}>{m}</span>;
+  const falado: Record<string, string> = { GET: 'consultar', POST: 'criar', PUT: 'atualizar', DELETE: 'excluir' };
+  // O leitor de tela ouve o método e o que ele faz (a cor sozinha não informa)
+  return <span className={`${s.method} ${cls}`}><span aria-hidden="true">{m}</span><span className={s.srOnly}>{`${m}, ${falado[m] ?? m}`}</span></span>;
 }
 
 // ─── Tabs de conteúdo ─────────────────────────────────────────────────────────
@@ -412,7 +425,7 @@ function TabOverview() {
             { layer: '⑤ Banco de Dados', color: '#797673', chips: ['PostgreSQL', 'Spring Data JPA', 'Hibernate'], desc: 'O schema PostgreSQL é provisionado pelo script SQL; spring.jpa.hibernate.ddl-auto=none.' },
           ].map(({ layer, color, chips, desc }) => (
             <div key={layer} className={s.archLayer}>
-              <span className={s.archLayerTitle} style={{ color }}>{layer}</span>
+              <span className={s.archLayerTitle} style={{ color }}><span aria-hidden="true">{layer}</span><span className={s.srOnly}>{`Camada ${"①②③④⑤".indexOf(layer[0]) + 1}: ${layer.slice(2)}`}</span></span>
               <div className={s.archChipRow}>
                 {chips.map(c => <span key={c} className={s.archChip}>{c}</span>)}
               </div>
@@ -424,12 +437,12 @@ function TabOverview() {
 
       <div className={s.section}>
         <Title3>Seed de Dados</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Seed de Dados">
           <thead>
             <tr>
-              <th className={s.th}>Tabela</th>
-              <th className={s.th}>Registros</th>
-              <th className={s.th}>Descrição</th>
+              <th scope="col" className={s.th}>Tabela</th>
+              <th scope="col" className={s.th}>Registros</th>
+              <th scope="col" className={s.th}>Descrição</th>
             </tr>
           </thead>
           <tbody>
@@ -469,7 +482,7 @@ function TabBancoDados() {
 
       <div className={s.section}>
         <Title3>Diagrama ER Simplificado</Title3>
-        <div className={s.erDiagram}>
+        <div className={s.erDiagram} role="region" aria-label="Diagrama de entidades e relacionamentos do banco de dados">
           <div className={s.erRow}>
             {tabelas.map(t => <ErTable key={t.nome} t={t} />)}
           </div>
@@ -478,13 +491,13 @@ function TabBancoDados() {
 
       <div className={s.section}>
         <Title3>Relacionamentos Principais</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Relacionamentos Principais">
           <thead>
             <tr>
-              <th className={s.th}>De</th>
-              <th className={s.th}>Cardinalidade</th>
-              <th className={s.th}>Para</th>
-              <th className={s.th}>Coluna FK</th>
+              <th scope="col" className={s.th}>De</th>
+              <th scope="col" className={s.th}>Cardinalidade</th>
+              <th scope="col" className={s.th}>Para</th>
+              <th scope="col" className={s.th}>Coluna FK</th>
             </tr>
           </thead>
           <tbody>
@@ -836,102 +849,29 @@ function TabUML() {
         ))}
       </div>
 
-      <div className={s.section}>
-        <Title2>Diagrama de Classes (UML)</Title2>
-        <Divider />
-        <Body1>
-          Representação das 11 entidades JPA e seus relacionamentos. Todas as classes pertencem ao pacote
-          <span className={s.inlineCode}> recode.leandrocrisci.projetofinal.model</span>.
-          O modelo visual editável está no arquivo <span className={s.inlineCode}>modelo-dados.drawio</span>.
-        </Body1>
-      </div>
-
-      <div className={s.section}>
-        <div className={s.erDiagram}>
-          <pre className={s.codeBlock}>{`┌──────────────────────┐         ┌──────────────────────┐
-│       Escola         │         │  EnderecoEscola       │
-├──────────────────────┤         ├──────────────────────┤
-│ - id: Long           │◄────────│ - id: Long            │
-│ - nome: String       │  1    N │ - logradouro: String  │
-│ - tipo: String       │         │ - numero: String      │
-│ - telefone: String   │         │ - bairro: String      │
-│ - email: String      │         │ - cidade: String      │
-└──────────────────────┘         │ - estado: String      │
-         │                       │ - cep: String         │
-    1    │                       │ - escola: Escola      │
-    ┌────┼────────────────────┐  └──────────────────────┘
-    │    │                    │
-    N    N                    N
-    ▼    ▼                    ▼
-┌────────────┐     ┌──────────────────────┐     ┌────────────────────┐
-│   Curso    │     │      Professor       │     │  AvaliacaoQual.    │
-├────────────┤     ├──────────────────────┤     ├────────────────────┤
-│ id: Long   │     │ id: Long             │     │ id: Long           │
-│ nome       │     │ nome: String         │     │ nota: Int (1-5)    │
-│ descricao  │     │ email: String        │     │ comentario: String │
-│ cargaHorar │     │ telefone: String     │     │ dataAvaliacao: Date│
-│ nivelEnsino│     │ especialidade: String│     │ escola: Escola     │
-│ escola:Esc │     │ biografia: String    │     └────────────────────┘
-└────────────┘     │ escola: Escola       │
-    │  │           └──────────────────────┘
-    N  N                     │ 1
-    │  └──────────┐          │ N (vendedor)
-    │             │          ▼
-    │     ┌───────▼──────────────────────────┐
-    │     │           Pedido                 │
-    │     ├──────────────────────────────────┤
-    │     │ id: Long                         │
-    │     │ escola: Escola                   │
-    │     │ produto: Produto                 │
-    │     │ professor: Professor (vendedor)  │
-    │     │ quantidade: Integer              │
-    │     │ valorUnitario: BigDecimal        │
-    │     │ dataPedido: LocalDateTime        │
-    │     │ statusPedido: Enum               │
-    │     └──────────────────────────────────┘
-    │                        ▲ N
-    │                        │ 1
-    │                    ┌───┴─────────┐
-    │                    │   Produto   │
-    │                    ├─────────────┤
-    │                    │ id: Long    │
-    │                    │ nome        │
-    │                    │ descricao   │
-    │                    │ preco       │
-    │                    │ quantidade  │
-    │                    └─────────────┘
-    │
-    ▼ (1:N por Curso)
-┌───────────────────────────────────────────────┐
-│                    Aluno                       │
-├───────────────────────────────────────────────┤
-│ id: Long                                       │
-│ nome: String                                   │
-│ email: String                                  │
-│ telefone: String                               │
-│ dataNascimento: LocalDate                      │
-│ curso: Curso                                   │
-│ escola: Escola                                 │
-└───────────────────────────────────────────────┘
-         │ 1          │ 1          │ 1
-    N ───┘            │ N          │ N
-    ▼                 ▼            ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  Matricula   │ │ ProgressoAluno│ │AvaliacaoAluno│
-├──────────────┤ ├──────────────┤ ├──────────────┤
-│ id           │ │ id           │ │ id           │
-│ aluno: Aluno │ │ aluno: Aluno │ │ aluno: Aluno │
-│ curso: Curso │ │ curso: Curso │ │ curso: Curso │
-│ dataMatricula│ │ %conclusao   │ │ nota (0-10)  │
-│ valorPago    │ │ dataAtualizac│ │ observacao   │
-│ statusPagam. │ └──────────────┘ │ dataAvalic.  │
-└──────────────┘                  └──────────────┘`}</pre>
+        <div className={s.section}>
+          <Title2>Diagrama de Classes (UML)</Title2>
+          <Divider />
+          <Body1>
+            Diagrama editável das 11 entidades JPA e seus relacionamentos, baseado nos modelos atuais do pacote
+            <span className={s.inlineCode}> recode.leandrocrisci.projetofinal.model</span>. Abra a fonte no VS Code com o
+            Draw.io Integration ou no diagrams.net.
+          </Body1>
+          <a
+            className={s.diagramSource}
+            href={`${import.meta.env.BASE_URL}diagramas/diagrama-classes.drawio`}
+            download
+          >
+            Baixar diagrama de classes (.drawio)
+          </a>
         </div>
-      </div>
 
       <div className={s.section}>
         <Title3>Camadas de Serviço — Diagrama de Pacotes</Title3>
-        <pre className={s.codeBlock}>{`recode.leandrocrisci.projetofinal
+        <p className={s.srOnly}>
+          Diagrama de pacotes do backend: controller recebe as requisições, service aplica as regras, repository acessa o banco e model define as entidades.
+        </p>
+        <pre className={s.codeBlock} aria-hidden="true">{`recode.leandrocrisci.projetofinal
 │
 ├── controller/         ← @RestController  (12 classes)
 │   ├── EscolaController
@@ -1034,12 +974,12 @@ function TabGuias() {
           <Warning16Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0, marginTop: 2 }} />
           <Text size={200}>Útil para deploy em nuvem (Render, Railway) que preferem PostgreSQL.</Text>
         </div>
-        <table className={s.table}>
+        <table className={s.table} aria-label="2. Migração MySQL → PostgreSQL (pgloader)">
           <thead>
             <tr>
-              <th className={s.th}>Diferença</th>
-              <th className={s.th}>MySQL</th>
-              <th className={s.th}>PostgreSQL</th>
+              <th scope="col" className={s.th}>Diferença</th>
+              <th scope="col" className={s.th}>MySQL</th>
+              <th scope="col" className={s.th}>PostgreSQL</th>
             </tr>
           </thead>
           <tbody>
@@ -1078,14 +1018,34 @@ java -jar pgloader.jar \\
             solucao: 'Remove-Item -Recurse -Force node_modules; npm cache clean --force; npm install',
           },
           {
-            titulo: 'FK incompatível no Hibernate (alter table falha)',
-            causa: 'Coluna FK com tipo INT referenciando PK BIGINT (ou vice-versa).',
-            solucao: 'Verificar migration_fix_types.sql e executar no MySQL Workbench. Reiniciar app.',
+            titulo: 'Driver PostgreSQL rejeita a jdbcUrl / CannotCreateTransactionException',
+            causa: 'No Render, SPRING_DATASOURCE_URL estava como postgresql://... em vez de jdbc:postgresql://.... O Hikari rejeita a URL sem o prefixo JDBC e o JPA não consegue abrir a transação.',
+            solucao: 'Configure SPRING_DATASOURCE_URL com jdbc:postgresql://<host>:5432/<database> e confira SPRING_DATASOURCE_USERNAME e SPRING_DATASOURCE_PASSWORD. Use host, porta e database do PostgreSQL no Render; salve e faça novo deploy do backend.',
           },
           {
-            titulo: 'CORS bloqueado no frontend',
-            causa: 'Spring Boot não configurado para aceitar origem do dev server Vite (porta 5173).',
-            solucao: 'Adicionar @CrossOrigin(origins = "http://localhost:5173") no controller ou configurar WebMvcConfigurer.',
+            titulo: 'API retorna HTTP 500 ou Could not open JPA EntityManager',
+            causa: 'A API não conseguiu acessar o banco. Durante o diagnóstico, a causa foi a URL JDBC sem jdbc:. Também pode ocorrer se o banco estiver indisponível ou se o esquema ainda não tiver sido criado.',
+            solucao: 'Confira a primeira exceção e as linhas Caused by nos logs do serviço Render. Valide URL e credenciais do datasource. Como ddl-auto está none, crie o esquema PostgreSQL com script_tabelas_recodedb_postgresql.sql antes de testar os endpoints.',
+          },
+          {
+            titulo: 'CORS bloqueia chamadas ou o preflight OPTIONS retorna 403',
+            causa: 'A origem do frontend publicado ou local não está na configuração CORS do backend, ou o deploy ainda usa uma versão antiga.',
+            solucao: 'No backend, configure CORS_ALLOWED_ORIGINS com as origens completas, separadas por vírgula e sem barra final: https://frontendweb-rcs5.onrender.com,http://localhost:5174. Faça redeploy e confira no navegador a resposta OPTIONS e o cabeçalho Access-Control-Allow-Origin.',
+          },
+          {
+            titulo: 'Frontend não encontra a API / URL duplicada ou endpoint incorreto',
+            causa: 'VITE_API_URL é incorporada durante o build do Vite. URL errada, sem /api ou alteração da variável sem novo deploy pode manter chamadas para o endereço antigo.',
+            solucao: 'No serviço frontend do Render, configure VITE_API_URL=https://webservice-xirs.onrender.com/api e faça um novo deploy. Localmente, o proxy do Vite encaminha /api para http://localhost:8090; confirme que o backend está ativo nessa porta.',
+          },
+          {
+            titulo: 'Importação cria o registro principal, mas falha ao salvar endereço',
+            causa: 'A importação de escolas faz duas chamadas: cria a escola e depois envia o endereço. Se a segunda chamada falhar, a escola pode permanecer cadastrada sem endereço.',
+            solucao: 'Consulte os logs do backend no horário da falha e corrija a causa do HTTP 500 antes de reenviar o endereço em /api/enderecos-escolas/escola/{escolaId}. Confirme se a escola já foi criada para evitar duplicatas.',
+          },
+          {
+            titulo: 'Planilha Google não carrega ou retorna acesso negado',
+            causa: 'A planilha não está compartilhada para leitura por link, o link não contém o gid correto ou a aba não tem os cabeçalhos esperados.',
+            solucao: 'Ative “Qualquer pessoa com o link pode visualizar”, confira o gid da aba e os nomes das colunas documentados na tela de importação. Teste primeiro a exportação CSV da própria aba.',
           },
         ].map(item => (
           <Card key={item.titulo}>
@@ -1100,6 +1060,55 @@ java -jar pgloader.jar \\
             />
           </Card>
         ))}
+
+        <div className={s.section}>
+          <Title3>Publicar a aplicação no Render.com</Title3>
+          <Text size={200}>
+            Crie ou selecione um PostgreSQL no Render e mantenha o serviço web na mesma região para usar a conexão interna quando disponível.
+            Não publique senhas no repositório nem em variáveis VITE_, pois variáveis Vite ficam visíveis no bundle do navegador.
+          </Text>
+          {[
+            {
+              num: '1',
+              title: 'Criar o banco PostgreSQL',
+              code: 'Render Dashboard → New + → PostgreSQL. Guarde o host, a porta, o nome do banco, o usuário e a senha. Execute script_tabelas_recodedb_postgresql.sql uma vez no banco vazio; ele cria o esquema usado pela API.',
+            },
+            {
+              num: '2',
+              title: 'Criar o backend como Web Service Docker',
+              code: 'New + → Web Service → conecte o repositório leandrocrisci/recode-projeto-final. Use a branch main, selecione Docker como runtime e informe backendJava/Dockerfile como caminho do Dockerfile. Mantenha a raiz do repositório como contexto de build, pois o Dockerfile copia o projeto e compila backendJava.',
+            },
+            {
+              num: '3',
+              title: 'Configurar variáveis do backend',
+              code: 'SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:5432/<database>?sslmode=require\nSPRING_DATASOURCE_USERNAME=<usuario-do-postgresql>\nSPRING_DATASOURCE_PASSWORD=<senha-do-postgresql>\nCORS_ALLOWED_ORIGINS=https://<url-do-frontend>.onrender.com,http://localhost:5174',
+            },
+            {
+              num: '4',
+              title: 'Criar o frontend como Static Site',
+              code: 'New + → Static Site → conecte o mesmo repositório. Root Directory: frontendWeb. Build Command: npm ci && npm run build. Publish Directory: dist. Em Environment, configure VITE_API_URL=https://<url-do-backend>.onrender.com/api.',
+            },
+            {
+              num: '5',
+              title: 'Publicar e validar',
+              code: 'Salve as variáveis e faça deploy dos dois serviços. VITE_API_URL exige novo build do frontend após cada mudança. Teste GET https://<url-do-backend>.onrender.com/api/cursos; espere 200 e JSON. Se retornar 500, consulte os logs do backend. Para CORS, confira também OPTIONS, Origin e Access-Control-Allow-Origin no DevTools.',
+            },
+          ].map(step => (
+            <div key={step.num} className={s.stepRow}>
+              <div className={s.stepNum}>{step.num}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                <Text weight="semibold">{step.title}</Text>
+                <pre className={s.codeBlock}>{step.code}</pre>
+              </div>
+            </div>
+          ))}
+          <div className={s.noteBox}>
+            <Warning16Regular style={{ color: tokens.colorStatusWarningForeground1, flexShrink: 0, marginTop: 2 }} />
+            <Text size={200}>
+              Use o formato de URL JDBC com jdbc: no início. Se usar a URL interna do banco Render, adapte-a para jdbc:postgresql:// e use o host interno fornecido pelo Render; não misture host interno e conexão externa. Nunca compartilhe SPRING_DATASOURCE_PASSWORD em prints ou no GitHub.
+            </Text>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1120,12 +1129,12 @@ function TabTestes() {
 
       <div className={s.section}>
         <Title3>Casos de Teste — Escolas</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Casos de Teste — Escolas">
           <thead>
             <tr>
-              <th className={s.th}>ID</th><th className={s.th}>Descrição</th>
-              <th className={s.th}>Método</th><th className={s.th}>Endpoint</th>
-              <th className={s.th}>Esperado</th>
+              <th scope="col" className={s.th}>ID</th><th scope="col" className={s.th}>Descrição</th>
+              <th scope="col" className={s.th}>Método</th><th scope="col" className={s.th}>Endpoint</th>
+              <th scope="col" className={s.th}>Esperado</th>
             </tr>
           </thead>
           <tbody>
@@ -1154,12 +1163,12 @@ function TabTestes() {
 
       <div className={s.section}>
         <Title3>Casos de Teste — Professores e Pedidos</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Casos de Teste — Professores e Pedidos">
           <thead>
             <tr>
-              <th className={s.th}>ID</th><th className={s.th}>Descrição</th>
-              <th className={s.th}>Método</th><th className={s.th}>Endpoint</th>
-              <th className={s.th}>Esperado</th>
+              <th scope="col" className={s.th}>ID</th><th scope="col" className={s.th}>Descrição</th>
+              <th scope="col" className={s.th}>Método</th><th scope="col" className={s.th}>Endpoint</th>
+              <th scope="col" className={s.th}>Esperado</th>
             </tr>
           </thead>
           <tbody>
@@ -1188,12 +1197,12 @@ function TabTestes() {
 
       <div className={s.section}>
         <Title3>Verificações de Integridade SQL</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Verificações de Integridade SQL">
           <thead>
             <tr>
-              <th className={s.th}>#</th>
-              <th className={s.th}>Verificação</th>
-              <th className={s.th}>Comando SQL</th>
+              <th scope="col" className={s.th}>#</th>
+              <th scope="col" className={s.th}>Verificação</th>
+              <th scope="col" className={s.th}>Comando SQL</th>
             </tr>
           </thead>
           <tbody>
@@ -1272,7 +1281,7 @@ function TabPlugin() {
           {
             num: '1',
             title: 'Abrir um diagrama existente',
-            code: 'frontendWeb/public/diagramas/arquitetura.drawio\nfrontendWeb/public/diagramas/modelo-dados.drawio\nfrontendWeb/public/diagramas/fluxos.drawio\n\n// Abra qualquer arquivo com o plugin Draw.io Integration.',
+            code: 'frontendWeb/public/diagramas/arquitetura.drawio\nfrontendWeb/public/diagramas/modelo-dados.drawio\nfrontendWeb/public/diagramas/diagrama-classes.drawio\nfrontendWeb/public/diagramas/fluxos.drawio\n\n// Abra qualquer arquivo com o plugin Draw.io Integration.',
           },
           {
             num: '2',
@@ -1302,12 +1311,12 @@ function TabPlugin() {
 
       <div className={s.section}>
         <Title3>Outras Extensões Úteis para o Projeto</Title3>
-        <table className={s.table}>
+        <table className={s.table} aria-label="Outras Extensões Úteis para o Projeto">
           <thead>
             <tr>
-              <th className={s.th}>Extensão</th>
-              <th className={s.th}>ID</th>
-              <th className={s.th}>Para que serve</th>
+              <th scope="col" className={s.th}>Extensão</th>
+              <th scope="col" className={s.th}>ID</th>
+              <th scope="col" className={s.th}>Para que serve</th>
             </tr>
           </thead>
           <tbody>
@@ -1334,7 +1343,92 @@ function TabPlugin() {
   );
 }
 
+function TabIA() {
+  const s = useStyles();
+  const conteudo = iaMarkdown.split('## 11. GitHub, Copilot e Render: guia executivo e acesso ao projeto')[1]?.split('\n## ')[0] ?? '';
+  const secoes = conteudo.split(/^### /m).slice(1).map(bloco => {
+    const [titulo, ...linhas] = bloco.split('\n');
+    return { titulo, linhas: linhas.join('\n').trim() };
+  });
+
+  const renderInline = (texto: string) =>
+    texto.split(/(`[^`]+`|\[[^\]]+\]\([^)]+\))/g).map((parte, indice) => {
+      const codigo = parte.match(/^`([^`]+)`$/);
+      if (codigo) return <span key={indice} className={s.inlineCode}>{codigo[1]}</span>;
+      const link = parte.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (link) {
+        return <a key={indice} href={link[2]} target="_blank" rel="noopener noreferrer">{link[1]}</a>;
+      }
+      return parte;
+    });
+
+  const renderLinhas = (texto: string) => {
+    const blocos: Array<{ tipo: 'codigo' | 'item' | 'paragrafo'; texto: string }> = [];
+    let codigoAtual: string[] | null = null;
+
+    for (const linha of texto.split('\n')) {
+      const limpa = linha.trim();
+      if (limpa.startsWith('```')) {
+        if (codigoAtual) {
+          blocos.push({ tipo: 'codigo', texto: codigoAtual.join('\n') });
+          codigoAtual = null;
+        } else {
+          codigoAtual = [];
+        }
+      } else if (codigoAtual) {
+        codigoAtual.push(linha);
+      } else if (limpa.startsWith('- ')) {
+        blocos.push({ tipo: 'item', texto: limpa.slice(2) });
+      } else if (limpa) {
+        blocos.push({ tipo: 'paragrafo', texto: limpa });
+      }
+    }
+
+    if (codigoAtual) blocos.push({ tipo: 'codigo', texto: codigoAtual.join('\n') });
+
+    return blocos.map((bloco, indice) => {
+      if (bloco.tipo === 'codigo') return <pre key={indice} className={s.codeBlock}>{bloco.texto}</pre>;
+      if (bloco.tipo === 'item') {
+        return (
+          <div key={indice} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <Text aria-hidden="true">•</Text>
+            <Text>{renderInline(bloco.texto)}</Text>
+          </div>
+        );
+      }
+      return <Body1 key={indice}>{renderInline(bloco.texto)}</Body1>;
+    });
+  };
+
+  return (
+    <div className={s.tabContent}>
+      <div className={s.section}>
+        <Title2>Inteligência Artificial e publicação do projeto</Title2>
+        <Body1>
+          Introdução executiva ao GitHub, GitHub Copilot e Render, com instruções para consultar o repositório e conhecer
+          as principais melhorias realizadas com apoio de IA. Este conteúdo é carregado do arquivo <span className={s.inlineCode}>IA.md</span>.
+        </Body1>
+      </div>
+      <div className={s.cardGrid2}>
+        {secoes.map(secao => (
+          <Card key={secao.titulo}>
+            <CardHeader header={<Title3>{secao.titulo}</Title3>} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 16px 16px' }}>
+              {renderLinhas(secao.linhas)}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
+
+const TAB_NOMES: Record<string, string> = {
+  overview: 'Visão Geral', bd: 'Banco de Dados', uml: 'UML / Arquitetura', endpoints: 'Endpoints',
+  testes: 'Plano de Testes', guias: 'Guias', plugin: 'Plugin VS Code', ia: 'IA',
+};
 
 export default function Documentacao() {
   const s = useStyles();
@@ -1344,7 +1438,7 @@ export default function Documentacao() {
     <div className={s.page}>
       {/* Hero */}
       <div className={s.hero}>
-        <div className={s.heroIcon}>
+        <div className={s.heroIcon} aria-hidden="true">
           <DocumentBulletList24Regular style={{ fontSize: 28, color: '#fff' }} />
         </div>
         <div className={s.heroText}>
@@ -1354,25 +1448,28 @@ export default function Documentacao() {
           </Text>
         </div>
         <Badge appearance="filled" color="informative" size="large" className={s.heroTag}>
-          v1.0
+          <span className={s.srOnly}>Versão </span>v1.0
         </Badge>
       </div>
 
       {/* Tabs */}
       <TabList
+        aria-label="Seções da documentação"
         selectedValue={tab}
         onTabSelect={(_: unknown, d: SelectTabData) => setTab(d.value as string)}
         size="medium"
       >
         <Tab value="overview" icon={<BookOpen24Regular />}>Visão Geral</Tab>
         <Tab value="bd" icon={<Database24Regular />}>Banco de Dados</Tab>
-        <Tab value="uml" icon={<CodeBlock24Regular />}>UML / Arquitetura</Tab>
+        <Tab value="uml" icon={<CodeBlock24Regular />}>UML</Tab>
         <Tab value="endpoints" icon={<ShareAndroid24Regular />}>Endpoints</Tab>
         <Tab value="testes" icon={<ClipboardTaskAdd24Regular />}>Plano de Testes</Tab>
         <Tab value="guias" icon={<ArrowRight16Regular />}>Guias</Tab>
         <Tab value="plugin" icon={<Info16Regular />}>Plugin VS Code</Tab>
+        <Tab value="ia" icon={<Info16Regular />}>IA</Tab>
       </TabList>
 
+      <div role="tabpanel" aria-label={TAB_NOMES[tab]}>
       {tab === 'overview'  && <TabOverview />}
       {tab === 'bd'        && <TabBancoDados />}
       {tab === 'uml'       && <TabUML />}
@@ -1380,6 +1477,8 @@ export default function Documentacao() {
       {tab === 'testes'    && <TabTestes />}
       {tab === 'guias'     && <TabGuias />}
       {tab === 'plugin'    && <TabPlugin />}
+      {tab === 'ia'        && <TabIA />}
+      </div>
     </div>
   );
 }
