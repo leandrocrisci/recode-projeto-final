@@ -349,6 +349,14 @@ export default function Agradecimentos() {
         </div>
       </section>
 
+      <div style={{ textAlign: "left" }}>
+        <Text block size={200}>Desenvolvido por</Text>
+        <Text block weight="semibold" size={500}>Leandro Crisci</Text>
+        <Link href="mailto:leandrocrisci@msn.com">
+          leandrocrisci@msn.com
+        </Link>
+      </div>
+
       <footer className={s.footer}>
         <Text size={200} className={s.muted}>Recode: recodificamos vidas através da tecnologia.</Text>
         <Link href={RECODE_URL} target="_blank" rel="noreferrer">trilhas.recode.org.br</Link>
