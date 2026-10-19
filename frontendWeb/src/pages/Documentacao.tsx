@@ -18,7 +18,7 @@ import {
   Warning16Regular,
   Info16Regular,
 } from '@fluentui/react-icons';
-import iaMarkdown from '../../../IA.md?raw';
+import iaMarkdown from '../assets/IA.md?raw';
 
 // ─── Estilos ────────────────────────────────────────────────────────────────
 
