@@ -16,7 +16,7 @@ import { Play24Filled } from '@fluentui/react-icons';
 import fluxo from './n8n-fluxo.json';
 
 // URL do Webhook do n8n (use /webhook-test/... no modo teste, /webhook/... com o workflow ativo)
-const DEFAULT_WEBHOOK = 'http://localhost:5678/webhook/gerar-escolas';
+const DEFAULT_WEBHOOK = 'https://recode-n8n.onrender.com/webhook/gerar-escolas';
 
 type Status = 'idle' | 'running' | 'done' | 'error' | 'skipped';
 
