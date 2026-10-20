@@ -19,6 +19,7 @@ import {
   DataTrending24Regular, DataTrending24Filled,
   Shield24Regular, Shield24Filled,
   Heart24Regular, Heart24Filled,
+  Flash24Regular, Flash24Filled,
   Navigation24Regular, Dismiss24Regular,
   bundleIcon,
 } from '@fluentui/react-icons';
@@ -39,6 +40,7 @@ const PedidoIcon     = bundleIcon(ShoppingBag24Filled,        ShoppingBag24Regul
 const ProgressoIcon  = bundleIcon(DataTrending24Filled,       DataTrending24Regular);
 const EventosIcon    = bundleIcon(Shield24Filled,             Shield24Regular);
 const AgradIcon      = bundleIcon(Heart24Filled,              Heart24Regular);
+const N8nIcon        = bundleIcon(Flash24Filled,              Flash24Regular);
 
 const useStyles = makeStyles({
   nav: {
@@ -191,6 +193,9 @@ export default function Sidebar() {
       <Text className={s.section}>Acompanhamento</Text>
       <NavItem to="/progressos"  icon={ProgressoIcon} label="Relatório Gerencial" />
       <NavItem to="/eventos"    icon={EventosIcon}   label="Central de Eventos" />
+
+      <Text className={s.section}>Automação</Text>
+      <NavItem to="/n8n" icon={N8nIcon} label="N8N" title="Workflow n8n com Gemini" />
 
       <Text className={s.section}>Projeto</Text>
       <NavItem to="/docs" icon={DocsIcon} label="Documentação" />

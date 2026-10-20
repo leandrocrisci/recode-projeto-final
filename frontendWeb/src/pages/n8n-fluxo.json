@@ -1,0 +1,507 @@
+{
+  "name": "Gemini2",
+  "nodes": [
+    {
+      "name": "Iniciar",
+      "type": "n8n-nodes-base.manualTrigger"
+    },
+    {
+      "name": "Config",
+      "type": "n8n-nodes-base.set"
+    },
+    {
+      "name": "Listar Escolas",
+      "type": "n8n-nodes-base.httpRequest"
+    },
+    {
+      "name": "Montar Prompt",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Extrair Escolas",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Criar Escola",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Criar Endereço",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Criar Avaliação",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Expandir Alunos",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Criar Aluno",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Resumo",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook"
+    },
+    {
+      "name": "Criar Curso",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger"
+    },
+    {
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm"
+    },
+    {
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini"
+    },
+    {
+      "name": "Criar Avaliação do Curso",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Expandir Professores",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Criar Professor",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "name": "Verificar Escolas",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Verificar Endereços",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Verificar Alunos",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Verificar Avaliações",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Validar Escolas",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Verificar Cursos",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET"
+      }
+    },
+    {
+      "name": "Há pendências?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "name": "Montar Prompt Reparo",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Basic LLM Chain Reparo",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm"
+    },
+    {
+      "name": "Google Gemini Chat Model Reparo",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini"
+    },
+    {
+      "name": "Montar Reparos",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "Aplicar Reparo",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST"
+      }
+    }
+  ],
+  "connections": {
+    "Iniciar": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Listar Escolas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar Escolas": {
+      "main": [
+        [
+          {
+            "node": "Montar Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Prompt": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Escolas": {
+      "main": [
+        [
+          {
+            "node": "Criar Escola",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Escola": {
+      "main": [
+        [
+          {
+            "node": "Criar Endereço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Endereço": {
+      "main": [
+        [
+          {
+            "node": "Criar Avaliação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Avaliação": {
+      "main": [
+        [
+          {
+            "node": "Criar Curso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Curso": {
+      "main": [
+        [
+          {
+            "node": "Criar Avaliação do Curso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expandir Alunos": {
+      "main": [
+        [
+          {
+            "node": "Criar Aluno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Aluno": {
+      "main": [
+        [
+          {
+            "node": "Expandir Professores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Extrair Escolas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Avaliação do Curso": {
+      "main": [
+        [
+          {
+            "node": "Expandir Alunos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expandir Professores": {
+      "main": [
+        [
+          {
+            "node": "Criar Professor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Professor": {
+      "main": [
+        [
+          {
+            "node": "Verificar Escolas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Escolas": {
+      "main": [
+        [
+          {
+            "node": "Verificar Endereços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Endereços": {
+      "main": [
+        [
+          {
+            "node": "Verificar Alunos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Alunos": {
+      "main": [
+        [
+          {
+            "node": "Verificar Avaliações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Avaliações": {
+      "main": [
+        [
+          {
+            "node": "Verificar Cursos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Escolas": {
+      "main": [
+        [
+          {
+            "node": "Há pendências?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Cursos": {
+      "main": [
+        [
+          {
+            "node": "Validar Escolas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Prompt Reparo": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain Reparo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain Reparo": {
+      "main": [
+        [
+          {
+            "node": "Montar Reparos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Reparos": {
+      "main": [
+        [
+          {
+            "node": "Aplicar Reparo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aplicar Reparo": {
+      "main": [
+        [
+          {
+            "node": "Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Há pendências?": {
+      "main": [
+        [
+          {
+            "node": "Montar Prompt Reparo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model Reparo": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain Reparo",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

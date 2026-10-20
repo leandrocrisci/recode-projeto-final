@@ -23,6 +23,7 @@ import Agradecimentos from './pages/Agradecimentos';
 import Professores  from './pages/Professores';
 import Pedidos      from './pages/Pedidos';
 import Progressos   from './pages/RelatorioDashboard';
+import N8N          from './pages/N8N';
 import GerenciamentoEventos from './components/DevLogger'; // Importação direta segura da nova página
 
 const useStyles = makeStyles({
@@ -78,6 +79,7 @@ function AppShell() {
             <Route path="/professores"  element={<Professores />} />
             <Route path="/pedidos"      element={<Pedidos />} />
             <Route path="/progressos"   element={<Progressos />} />
+            <Route path="/n8n"          element={<N8N />} />
             
             {/* Central de Eventos e Auditoria */}
             <Route path="/eventos"      element={<GerenciamentoEventos />} />

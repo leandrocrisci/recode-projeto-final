@@ -73,6 +73,9 @@ export const integracoes = ['Google Maps JavaScript API', 'ViaCEP', 'Google Shee
 
 // ── Tecnologias ───────────────────────────────────────────────────────────────
 
+export const resumoExecutivoN8n =
+  'O n8n é uma plataforma de automação de fluxos de trabalho que conecta aplicações e serviços por meio de integrações visuais e APIs. Hospedado em Docker, pode ser executado sob controle da própria infraestrutura e, neste projeto, representa uma possibilidade de integrar e automatizar processos entre o portal, sua API e outros serviços, sem substituir a lógica central do sistema.';
+
 export interface Tecnologia {
   nome: string;
   papel: string;
@@ -115,6 +118,12 @@ export const tecnologias: GrupoTecnologias[] = [
     ],
   },
   {
+    titulo: 'Automação',
+    itens: [
+      { nome: 'n8n', papel: 'Automação visual de fluxos e integração entre aplicações e APIs; pode ser hospedado em Docker' },
+    ],
+  },
+  {
     titulo: 'Ferramentas',
     itens: [
       { nome: 'Git', papel: 'Versionamento e histórico do código' },
@@ -123,6 +132,15 @@ export const tecnologias: GrupoTecnologias[] = [
       { nome: 'MySQL Workbench', papel: 'SQL do treinamento e primeiras versões do banco, antes da migração para PostgreSQL' },
       { nome: 'Postman, Insomnia e curl', papel: 'Testes dos endpoints da API' },
       { nome: 'Draw.io', papel: 'Diagramas de arquitetura, ER e UML da documentação' },
+    ],
+  },
+  {
+    titulo: 'Certificação',
+    itens: [
+      {
+        nome: 'Microsoft® Certified Technology Specialist: BizTalk Server 2006, Custom Applications',
+        papel: 'Certificação em desenvolvimento de aplicações personalizadas com Microsoft BizTalk Server 2006',
+      },
     ],
   },
 ];

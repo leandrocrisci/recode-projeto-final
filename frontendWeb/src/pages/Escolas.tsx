@@ -24,8 +24,10 @@ import { useAuth } from '../context/AuthContext';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
-  tableWrap: { border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium, overflow: 'hidden' },
+  tableWrap: { border: `1px solid ${tokens.colorNeutralStroke1}`, borderRadius: tokens.borderRadiusMedium, overflow: 'auto' },
   actionCell: { display: 'flex', gap: '6px' },
+  cell: { overflow: 'hidden' }, // texto longo não invade a coluna vizinha
+  ellipsis: { display: 'block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 });
 
 const emptyEscola   = { nome: '', tipo: '', telefone: '', email: '' };
@@ -193,12 +195,12 @@ export default function Escolas() {
     createTableColumn<Escola>({ 
       columnId: 'email', compare: (a, b) => cmpTexto(a.email, b.email),    
       renderHeaderCell: () => 'E-mail Institucional',    
-      renderCell: i => <TableCellLayout>{i.email || '—'}</TableCellLayout> 
+      renderCell: i => <TableCellLayout><span className={s.ellipsis} title={i.email || undefined}>{i.email || '—'}</span></TableCellLayout> 
     }),
     createTableColumn<Escola>({ 
       columnId: 'endereco', compare: (a, b) => cmpTexto(enderecoResumido(a.id), enderecoResumido(b.id)), 
       renderHeaderCell: () => 'Localização Geográfica',  
-      renderCell: i => <TableCellLayout media={<Location24Regular />}>{enderecoResumido(i.id)}</TableCellLayout> 
+      renderCell: i => <TableCellLayout media={<Location24Regular />}><span className={s.ellipsis} title={enderecoResumido(i.id)}>{enderecoResumido(i.id)}</span></TableCellLayout> 
     }),
     ...(isAdmin ? [createTableColumn<Escola>({ 
       columnId: 'acoes', 
@@ -237,14 +239,21 @@ export default function Escolas() {
         <Spinner label="Consolidando base de dados cartográfica..." />
       ) : (
         <div className={s.tableWrap}>
-          <DataGrid items={escolas} columns={columns} sortable resizableColumns columnSizingOptions={{ nome: { defaultWidth: 260 }, endereco: { defaultWidth: 260 } }}>
+          <DataGrid items={escolas} columns={columns} sortable resizableColumns columnSizingOptions={{
+              nome:     { defaultWidth: 240, minWidth: 160 },
+              tipo:     { defaultWidth: 120, minWidth: 100 },
+              telefone: { defaultWidth: 140, minWidth: 120 },
+              email:    { defaultWidth: 240, minWidth: 160 },
+              endereco: { defaultWidth: 300, minWidth: 180 },
+              acoes:    { defaultWidth: 90,  minWidth: 80 },
+            }}>
             <DataGridHeader>
               <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
             </DataGridHeader>
             <DataGridBody<Escola>>
               {({ item, rowId }) => (
                 <DataGridRow<Escola> key={rowId}>
-                  {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
+                  {({ renderCell }) => <DataGridCell className={s.cell}>{renderCell(item)}</DataGridCell>}
                 </DataGridRow>
               )}
             </DataGridBody>

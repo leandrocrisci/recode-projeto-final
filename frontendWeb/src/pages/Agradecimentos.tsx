@@ -8,7 +8,7 @@ import {
   Box24Regular, Shield24Regular, Globe24Regular,
 } from '@fluentui/react-icons';
 import {
-  AUTOR, RECODE_URL, CURSO, AGRADECIMENTO, resumoSistema, recursos, fluxo, integracoes, tecnologias, jornada, sinteseProjeto,
+  AUTOR, RECODE_URL, CURSO, AGRADECIMENTO, resumoSistema, recursos, fluxo, integracoes, resumoExecutivoN8n, tecnologias, jornada, sinteseProjeto,
 } from '../data/agradecimentos';
 import type { Recurso } from '../data/agradecimentos';
 
@@ -294,6 +294,10 @@ export default function Agradecimentos() {
       {/* ── Tecnologias ──────────────────────────────────────────────────── */}
       <section className={s.section}>
         <SectionHead title="Tecnologias utilizadas" subtitle="O que cada peça faz neste projeto." />
+        <div className={s.callout}>
+          <Text size={300} className={s.strong}>Resumo executivo: n8n</Text>
+          <Text size={200}>{resumoExecutivoN8n}</Text>
+        </div>
         <div className={s.grid2}>
           {tecnologias.map(g => (
             <article key={g.titulo} className={s.card}>
