@@ -3,6 +3,7 @@ import { APIProvider, AdvancedMarker, ColorScheme, Map, InfoWindow, Circle } fro
 import { Spinner, Text, Badge, makeStyles, tokens, Button, Input, MessageBar, MessageBarBody, FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { Building24Regular, VehicleBus24Regular, MyLocation24Regular, Star24Regular, Clock24Regular, People24Regular, Location24Regular, Search24Regular, ArrowLeft24Regular } from '@fluentui/react-icons';
 import { KpiCard } from '../components/KpiCard';
+import StreetViewEscola from '../components/StreetViewEscola';
 import { useTheme } from '../context/ThemeContext';
 import { corTipoEscola } from '../utils/tipoEscola';
 import type { KpiTone } from '../components/KpiCard';
@@ -87,6 +88,8 @@ export default function Dashboard() {
   // NOVO: Estados de controle dinâmico da câmera do Google Maps
   const [mapCenter, setMapCenter] = useState(BRASILIA_CENTER);
   const [mapZoom, setMapZoom] = useState(4);
+  // Street View: a escolha de abrir/fechar vale para todas as escolas até o usuário mudar
+  const [streetViewAberto, setStreetViewAberto] = useState(true);
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -242,6 +245,16 @@ export default function Dashboard() {
                   </Text>
                 </div>
               
+                {/* Street View interativo da escola selecionada (recriado a cada troca de escola) */}
+                <StreetViewEscola
+                  key={escolaSelecionada.id}
+                  latitude={Number(escolaSelecionada.latitude)}
+                  longitude={Number(escolaSelecionada.longitude)}
+                  nome={escolaSelecionada.nome}
+                  aberto={streetViewAberto}
+                  onAlternar={setStreetViewAberto}
+                />
+
                 <div className={s.customPanel} style={{ borderLeft: `4px solid ${tokens.colorBrandBackground}` }}>
                   <span className={s.panelTitle}>Índice de Qualidade da Instituição</span>
                   <div className={s.statRow}>

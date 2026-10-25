@@ -111,7 +111,7 @@ export default function Navbar() {
           aria-expanded={aberto}
           aria-controls="menu-lateral"
         />
-        <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para o Dashboard">
+        <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para a apresentação">
           <BookOpen24Regular style={{ fontSize: '24px', flexShrink: 0 }} />
           <Text className={mergeClasses(s.title, s.tituloCompleto)}>Recode — Avaliação Escolas</Text>
           <Text className={mergeClasses(s.title, s.tituloCurto)}>Recode</Text>

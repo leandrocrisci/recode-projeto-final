@@ -21,11 +21,13 @@ import Produtos  from './pages/Produtos';
 import Ods4         from './pages/Ods4';
 import Documentacao from './pages/Documentacao';
 import Agradecimentos from './pages/Agradecimentos';
+import Manual       from './pages/Manual';
 import Professores  from './pages/Professores';
 import Pedidos      from './pages/Pedidos';
 import Progressos   from './pages/RelatorioDashboard';
 import N8N          from './pages/N8N';
-import GerenciamentoEventos from './components/DevLogger'; // Importação direta segura da nova página
+import GerenciamentoEventos from './components/DevLogger';
+import Apresentacao from './pages/Apresentacao';
 
 const useStyles = makeStyles({
   shell: {
@@ -66,7 +68,8 @@ function AppShell() {
         <Sidebar />
         <main className={s.main}>
           <Routes>
-            <Route path="/"             element={<Dashboard />} />
+            <Route path="/"             element={<Apresentacao />} />
+            <Route path="/dashboard"    element={<Dashboard />} />
             <Route path="/escolas"      element={<Escolas />} />
             <Route path="/cursos"       element={<Cursos />} />
             <Route path="/alunos"       element={<Alunos />} />
@@ -77,15 +80,17 @@ function AppShell() {
             <Route path="/ods4"         element={<Ods4 />} />
             <Route path="/docs"         element={<Documentacao />} />
             <Route path="/agradecimentos" element={<Agradecimentos />} />
+            <Route path="/inicio"       element={<Navigate to="/" replace />} />
+            <Route path="/apresentacao" element={<Navigate to="/" replace />} />
+            <Route path="/Dashboard"    element={<Navigate to="/dashboard" replace />} />
+            <Route path="/manual"       element={<Manual />} />
             <Route path="/professores"  element={<Professores />} />
             <Route path="/pedidos"      element={<Pedidos />} />
             <Route path="/progressos"   element={<Progressos />} />
             <Route path="/n8n"          element={<N8N />} />
-            
-            {/* Central de Eventos e Auditoria */}
             <Route path="/eventos"      element={<GerenciamentoEventos />} />
-            {/* Rota antiga: mantém favoritos e links funcionando */}
             <Route path="/DevLogger"    element={<Navigate to="/eventos" replace />} />
+            <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
