@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
 import type { LogEntry } from '../context/LogContext';
+import { lerSessao } from './sessao';
 
 // Referência injetada pelo App em DEV — evita dependência circular com React
 type AddLogFn = (e: Omit<LogEntry, 'id' | 'ts'>) => void;
@@ -9,6 +10,37 @@ let _addLog: AddLogFn | null = null;
 
 export function registerLogger(fn: AddLogFn) {
   _addLog = fn;
+}
+
+let _onUnauthorized: (() => void) | null = null;
+
+export function registerUnauthorizedHandler(fn: () => void) {
+  _onUnauthorized = fn;
+}
+
+const SECRET_KEYS = new Set(['senha', 'password', 'token']);
+
+function ocultarSegredos(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(ocultarSegredos);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+        key,
+        SECRET_KEYS.has(key.toLowerCase()) ? '***' : ocultarSegredos(item),
+      ]),
+    );
+  }
+  return value;
+}
+
+function detalheSeguro(data: unknown): string | undefined {
+  if (data === undefined || data === null || data === '') return undefined;
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return JSON.stringify(ocultarSegredos(parsed), null, 2);
+  } catch {
+    return typeof data === 'string' ? data : String(data);
+  }
 }
 
 // ── Instância Axios ──────────────────────────────────────────────────────────
@@ -29,6 +61,11 @@ const isWriteMethod = (method?: string) =>
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   (config as InternalAxiosRequestConfig & { _t: number })._t = Date.now();
 
+  const sessao = lerSessao();
+  if (sessao) {
+    config.headers.Authorization = `Bearer ${sessao.token}`;
+  }
+
   if (_addLog) {
     const method = config.method?.toUpperCase();
     const url = (config.baseURL ?? '') + (config.url ?? '');
@@ -38,7 +75,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       method,
       url,
       message: `→ ${method} ${config.url}`,
-      detail: config.data ? JSON.stringify(config.data, null, 2) : undefined,
+      detail: detalheSeguro(config.data),
     });
     if (isWriteMethod(method)) {
       _addLog({
@@ -71,10 +108,7 @@ api.interceptors.response.use(
         status: response.status,
         durationMs: ms,
         message: `← ${response.status} ${cfg.method?.toUpperCase()} ${cfg.url}`,
-        detail: (() => {
-          try { return JSON.stringify(response.data, null, 2); }
-          catch { return String(response.data); }
-        })(),
+        detail: detalheSeguro(response.data),
       });
       if (isWriteMethod(cfg.method)) {
         _addLog({
@@ -96,14 +130,7 @@ api.interceptors.response.use(
       const url = cfg ? (cfg.baseURL ?? '') + (cfg.url ?? '') : '(unknown)';
       const status = error.response?.status;
 
-      let detail: string | undefined;
-      try {
-        detail = error.response?.data
-          ? JSON.stringify(error.response.data, null, 2)
-          : error.message;
-      } catch {
-        detail = error.message;
-      }
+      const detail = detalheSeguro(error.response?.data) ?? error.message;
 
       _addLog({
         source: 'network',
@@ -129,11 +156,28 @@ api.interceptors.response.use(
         });
       }
     }
+    const failedUrl = (error.config as InternalAxiosRequestConfig | undefined)?.url ?? '';
+    if (error.response?.status === 401 && !failedUrl.includes('/auth/login')) {
+      _onUnauthorized?.();
+    }
     return Promise.reject(error);
   },
 );
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
+
+export interface LoginResposta {
+  token: string;
+  tipo: string;
+  expiraEmSegundos: number;
+  id: number;
+  nome: string;
+  email: string;
+  role: string;
+}
+
+export const loginApi = (email: string, senha: string) =>
+  api.post<LoginResposta>('/auth/login', { email, senha });
 
 // ── Escolas ──────────────────────────────────────────────
 export const getEscolas = () => api.get('/escolas');

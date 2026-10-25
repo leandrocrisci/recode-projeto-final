@@ -1,5 +1,6 @@
 package recode.leandrocrisci.projetofinal.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import recode.leandrocrisci.projetofinal.model.Escola;
 import recode.leandrocrisci.projetofinal.model.Professor;
@@ -12,11 +13,14 @@ public class ProfessorService {
 
     private final ProfessorRepository professorRepository;
     private final EscolaService escolaService;
+    private final PasswordEncoder passwordEncoder;
 
     public ProfessorService(ProfessorRepository professorRepository,
-                            EscolaService escolaService) {
+                            EscolaService escolaService,
+                            PasswordEncoder passwordEncoder) {
         this.professorRepository = professorRepository;
         this.escolaService = escolaService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<Professor> listarTodos() {
@@ -38,7 +42,10 @@ public class ProfessorService {
 
     public Professor salvar(Long escolaId, Professor professor) {
         Escola escola = escolaService.buscarPorId(escolaId);
+        professor.setId(null);
         professor.setEscola(escola);
+        aplicarSenha(professor, professor.getSenha());
+        professor.setSenha(null);
         return professorRepository.save(professor);
     }
 
@@ -53,11 +60,18 @@ public class ProfessorService {
             Escola escola = escolaService.buscarPorId(dados.getEscola().getId());
             professor.setEscola(escola);
         }
+        aplicarSenha(professor, dados.getSenha());
         return professorRepository.save(professor);
     }
 
     public void deletar(Long id) {
         buscarPorId(id);
         professorRepository.deleteById(id);
+    }
+
+    private void aplicarSenha(Professor professor, String senha) {
+        if (senha != null && !senha.isBlank()) {
+            professor.setSenhaHash(passwordEncoder.encode(senha));
+        }
     }
 }

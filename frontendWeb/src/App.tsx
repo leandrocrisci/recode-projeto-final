@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LogProvider, useLogs } from './context/LogContext';
 import { registerLogger } from './services/api';
 import Navbar    from './components/Navbar';
+import LoginDialog from './components/LoginDialog';
 import Sidebar   from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Escolas   from './pages/Escolas';
@@ -88,6 +89,7 @@ function AppShell() {
           </Routes>
         </main>
       </div>
+      <LoginDialog />
     </div>
   );
 }

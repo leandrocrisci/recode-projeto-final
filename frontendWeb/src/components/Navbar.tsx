@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import {
   makeStyles, mergeClasses, tokens, Text, Badge, Tooltip, Avatar, Button,
-  Menu, MenuTrigger, MenuPopover, MenuList, MenuGroupHeader, MenuItemRadio,
+  Menu, MenuTrigger, MenuPopover, MenuList, MenuGroupHeader, MenuItem,
 } from '@fluentui/react-components';
 import {
   BookOpen24Regular,
   Person24Regular,
-  Settings24Regular,
+  SignOut24Regular,
   WeatherMoon24Regular,
   WeatherSunny24Regular,
   ChevronDown16Regular,
@@ -14,13 +14,7 @@ import {
 } from '@fluentui/react-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import type { UserRole } from '../types';
 import { NAVBAR_HEIGHT, alternarMenu, useMenuLateral } from '../hooks/useMenuLateral';
-
-const PERFIS: Record<UserRole, { label: string; badge: string }> = {
-  user: { label: 'Usuário', badge: 'USER' },
-  admin: { label: 'Administrador', badge: 'ADMIN' },
-};
 
 const useStyles = makeStyles({
   header: {
@@ -101,9 +95,8 @@ const useStyles = makeStyles({
 
 export default function Navbar() {
   const s = useStyles();
-  const { role, setRole, isAdmin } = useAuth();
+  const { isAdmin, usuario, logout, abrirLogin } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const perfil = PERFIS[role];
   const { aberto } = useMenuLateral();
 
   return (
@@ -126,36 +119,40 @@ export default function Navbar() {
       </div>
 
       <div className={s.right}>
-        {/* Perfil de acesso: avatar, papel atual e troca de papel num único menu */}
-        <Menu
-          checkedValues={{ perfil: [role] }}
-          onCheckedValueChange={(_, d) => {
-            const novo = d.checkedItems[0];
-            if (novo === 'admin' || novo === 'user') setRole(novo);
-          }}
-        >
-          <MenuTrigger disableButtonEnhancement>
-            <Button
-              appearance="transparent"
-              className={s.profileBtn}
-              icon={<Avatar name={perfil.label} color={isAdmin ? 'gold' : 'blue'} size={28} />}
-              aria-label={`Perfil atual: ${perfil.label}. Abrir menu de perfil`}
-            >
-              <span className={mergeClasses(s.profileText, s.ocultarNoCelular)}>{perfil.label}</span>
-              <Badge className={s.ocultarNoCelular} appearance="filled" color={isAdmin ? 'warning' : 'informative'} size="medium">
-                {perfil.badge}
-              </Badge>
-              <ChevronDown16Regular />
-            </Button>
-          </MenuTrigger>
-          <MenuPopover>
-            <MenuList>
-              <MenuGroupHeader>Perfil de acesso</MenuGroupHeader>
-              <MenuItemRadio name="perfil" value="user" icon={<Person24Regular />}>Usuário comum</MenuItemRadio>
-              <MenuItemRadio name="perfil" value="admin" icon={<Settings24Regular />}>Administrador</MenuItemRadio>
-            </MenuList>
-          </MenuPopover>
-        </Menu>
+        {isAdmin ? (
+          <Menu>
+            <MenuTrigger disableButtonEnhancement>
+              <Button
+                appearance="transparent"
+                className={s.profileBtn}
+                icon={<Avatar name={usuario?.nome ?? 'Professor'} color="gold" size={28} />}
+                aria-label={`Professor: ${usuario?.nome ?? ''}. Abrir menu`}
+              >
+                <span className={mergeClasses(s.profileText, s.ocultarNoCelular)}>{usuario?.nome}</span>
+                <Badge className={s.ocultarNoCelular} appearance="filled" color="warning" size="medium">
+                  PROFESSOR
+                </Badge>
+                <ChevronDown16Regular />
+              </Button>
+            </MenuTrigger>
+            <MenuPopover>
+              <MenuList>
+                <MenuGroupHeader>{usuario?.email}</MenuGroupHeader>
+                <MenuItem icon={<SignOut24Regular />} onClick={logout}>Sair</MenuItem>
+              </MenuList>
+            </MenuPopover>
+          </Menu>
+        ) : (
+          <Button
+            appearance="transparent"
+            className={s.profileBtn}
+            icon={<Person24Regular />}
+            onClick={() => abrirLogin()}
+            aria-label="Entrar como professor"
+          >
+            <span className={s.profileText}>Entrar</span>
+          </Button>
+        )}
 
         <div className={s.divider} />
 

@@ -1,8 +1,11 @@
 package recode.leandrocrisci.projetofinal.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 import java.util.Objects;
 
@@ -36,6 +39,15 @@ public class Professor {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Escola escola;
 
+    @JsonIgnore
+    @Column(name = "senha_hash")
+    private String senhaHash;
+
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Pattern(regexp = "^$|.{8,72}", message = "Senha deve ter de 8 a 72 caracteres")
+    private String senha;
+
     public Professor() {}
 
     public Long getId() { return id; }
@@ -58,6 +70,12 @@ public class Professor {
 
     public Escola getEscola() { return escola; }
     public void setEscola(Escola escola) { this.escola = escola; }
+
+    public String getSenhaHash() { return senhaHash; }
+    public void setSenhaHash(String senhaHash) { this.senhaHash = senhaHash; }
+
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
     @Override
     public boolean equals(Object o) {

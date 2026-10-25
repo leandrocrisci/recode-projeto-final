@@ -42,7 +42,7 @@ const useStyles = makeStyles({
 const emptyForm = { nome: '', descricao: '', preco: '', quantidade: '0', icone: '' };
 const emptyPedido = { escolaId: '', professorId: '', quantidade: '1' };
 export default function Produtos() {
-  const s = useStyles(), fs = useFormStyles(), { isAdmin } = useAuth();
+  const s = useStyles(), fs = useFormStyles(), { isAdmin, abrirLogin } = useAuth();
   const { confirmar, dialog } = useConfirm();
   const [produtos, setProdutos] = useState<Produto[]>([]), [escolas, setEscolas] = useState<Escola[]>([]), [professores, setProfessores] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [view, setView] = useState<'vitrine'|'estoque'>('vitrine'), [busca, setBusca] = useState('');
@@ -174,7 +174,13 @@ export default function Produtos() {
               <CardHeader header={<Text weight="semibold">{p.nome}</Text>} description={<Text size={200}>{p.descricao}</Text>} />
               <CardFooter style={{ justifyContent: 'space-between' }}>
                 <Text size={500} weight="bold">{fmtPreco(p.preco)}</Text>
-                <Button appearance="primary" icon={<Cart24Regular />} onClick={() => { setPProd(p); setPForm(emptyPedido); setPModal(true); }}>Solicitar</Button>
+                <Button appearance="primary" icon={<Cart24Regular />} onClick={() => {
+                  if (!isAdmin) {
+                    abrirLogin('Entre como professor para criar um pedido.');
+                    return;
+                  }
+                  setPProd(p); setPForm(emptyPedido); setError(''); setPModal(true);
+                }} disabled={p.quantidade <= 0}>{p.quantidade > 0 ? (isAdmin ? 'Solicitar' : 'Entrar para solicitar') : 'Sem estoque'}</Button>
               </CardFooter>
             </Card>
           ))}

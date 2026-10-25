@@ -26,7 +26,7 @@ const useStyles = makeStyles({
   actionCell: { display: 'flex', gap: '6px' },
 });
 
-const emptyForm = { nome: '', email: '', telefone: '', especialidade: '', biografia: '', escolaId: '' };
+const emptyForm = { nome: '', email: '', telefone: '', especialidade: '', biografia: '', escolaId: '', senha: '' };
 
 export default function Professores() {
   const s  = useStyles();
@@ -60,6 +60,7 @@ export default function Professores() {
       nome: p.nome, email: p.email ?? '', telefone: p.telefone ?? '',
       especialidade: p.especialidade ?? '', biografia: p.biografia ?? '',
       escolaId: String(p.escola?.id ?? ''),
+      senha: '',
     });
     setEditId(p.id); setError(''); setModal(true);
   };
@@ -74,6 +75,7 @@ export default function Professores() {
       telefone: form.telefone || null,
       especialidade: form.especialidade || null,
       biografia: form.biografia || null,
+      senha: form.senha || undefined,
     };
     try {
       if (editId) {
@@ -168,6 +170,16 @@ export default function Professores() {
             </Field>
             <Field label="Telefone">
               <Input value={form.telefone} onChange={set('telefone')} />
+            </Field>
+            <Field
+              label="Senha de acesso"
+              style={{ gridColumn: '1 / -1' }}
+              hint={editId
+                ? 'Deixe em branco para manter a senha atual. Mínimo de 8 caracteres.'
+                : 'Opcional. Professores com senha podem entrar. Mínimo de 8 caracteres.'}
+            >
+              <Input type="password" autoComplete="new-password" minLength={8} maxLength={72}
+                value={form.senha} onChange={set('senha')} />
             </Field>
             <Field label="Biografia" style={{ gridColumn: '1 / -1' }}>
               <Textarea rows={3} value={form.biografia}
