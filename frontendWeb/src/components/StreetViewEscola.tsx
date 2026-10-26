@@ -102,7 +102,8 @@ function PainelStreetView({ latitude, longitude, nome, onFechar }: PainelProps) 
         preference: streetView.StreetViewPreference.NEAREST,
         source: streetView.StreetViewSource.OUTDOOR, // só imagens de rua, sem interiores
       })
-      .then(({ data }) => {
+      // Altere o parâmetro ou callback adicionando a definição do tipo do objeto:
+      .then(({ data }: { data: any }) => {
         if (!ativo) return;
         const local = data.location;
         if (!local?.pano) { setEstado('sem-cobertura'); return; }
