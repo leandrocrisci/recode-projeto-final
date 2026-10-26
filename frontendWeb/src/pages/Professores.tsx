@@ -132,7 +132,13 @@ export default function Professores() {
       {loading ? <Spinner label="Carregando professores..." /> : (
         <div className={s.tableWrap}>
           <DataGrid items={professores} columns={columns} sortable resizableColumns
-            columnSizingOptions={{ nome: { defaultWidth: 200 }, escola: { defaultWidth: 200 } }}>
+              columnSizingOptions={{nome: { defaultWidth: 220, minWidth: 150 },
+                                    especialidade: { defaultWidth: 200, minWidth: 120 },
+                                    escola: { defaultWidth: 240, minWidth: 180 },
+                                    email: { defaultWidth: 220, minWidth: 220 },     
+                                    telefone: { defaultWidth: 120, minWidth: 120 }, 
+                                    acoes: { defaultWidth: 50, minWidth: 50 }        
+                                  }}>
             <DataGridHeader>
               <DataGridRow>{({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}</DataGridRow>
             </DataGridHeader>

@@ -170,7 +170,7 @@ export default function Sidebar() {
         <Button appearance="subtle" icon={<Dismiss24Regular />} aria-label="Fechar menu" onClick={() => setAberto(false)} />
       </div>
       <Text className={s.section}>Navegação</Text>
-      <NavItem to="/"            icon={HomeIcon}    label="Apresentação" title="O que o sistema resolve e para quem" />
+      <NavItem to="/"            icon={HomeIcon}    label="Pagina Inicial" title="O que o sistema resolve e para quem" />
       <NavItem to="/dashboard"   icon={DashIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
 

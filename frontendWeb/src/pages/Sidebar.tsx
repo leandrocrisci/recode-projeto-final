@@ -168,7 +168,7 @@ export default function Sidebar() {
         <Button appearance="subtle" icon={<Dismiss24Regular />} aria-label="Fechar menu" onClick={() => setAberto(false)} />
       </div>
       <Text className={s.section}>Navegação</Text>
-      <NavItem to="/"            icon={HomeIcon}    label="Apresentação" />
+      <NavItem to="/"            icon={HomeIcon}    label="Página Inicial" />
       <NavItem to="/dashboard"   icon={DashIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
 

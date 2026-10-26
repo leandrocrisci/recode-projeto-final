@@ -4,7 +4,6 @@ import {
   Menu, MenuTrigger, MenuPopover, MenuList, MenuGroupHeader, MenuItem,
 } from '@fluentui/react-components';
 import {
-  BookOpen24Regular,
   Person24Regular,
   SignOut24Regular,
   WeatherMoon24Regular,
@@ -15,6 +14,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { NAVBAR_HEIGHT, alternarMenu, useMenuLateral } from '../hooks/useMenuLateral';
+
+// O logotipo fica em public/logo-marca.png (o Vite o serve na raiz do site)
+const LOGO_URL = `${import.meta.env.BASE_URL}logo-marca.png`;
 
 const useStyles = makeStyles({
   header: {
@@ -47,6 +49,7 @@ const useStyles = makeStyles({
     borderRadius: tokens.borderRadiusMedium,
     ':focus-visible': { outline: '2px solid #fff', outlineOffset: '4px' },
   },
+  logo: { width: '36px', height: '36px', flexShrink: 0, borderRadius: '22%', display: 'block' },
   title: {
     fontWeight: '600',
     fontSize: '16px',
@@ -111,10 +114,10 @@ export default function Navbar() {
           aria-expanded={aberto}
           aria-controls="menu-lateral"
         />
-        <Link to="/" className={s.brand} aria-label="Recode — Avaliação Escolas, ir para a Apresentação">
-          <BookOpen24Regular style={{ fontSize: '24px', flexShrink: 0 }} />
-          <Text className={mergeClasses(s.title, s.tituloCompleto)}>Recode — Avaliação Escolas</Text>
-          <Text className={mergeClasses(s.title, s.tituloCurto)}>Recode</Text>
+        <Link to="/" className={s.brand} aria-label="Semear — Avaliação Escolas, ir para a página inicial">
+          <img className={s.logo} src={LOGO_URL} alt="" width={36} height={36} />
+          <Text className={mergeClasses(s.title, s.tituloCompleto)}>Semear — Avaliação Escolas</Text>
+          <Text className={mergeClasses(s.title, s.tituloCurto)}>Semear</Text>
         </Link>
       </div>
 

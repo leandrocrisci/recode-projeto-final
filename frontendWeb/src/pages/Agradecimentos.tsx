@@ -175,6 +175,16 @@ const useStyles = makeStyles({
     boxShadow: tokens.shadow8,
   },
   letterText: { lineHeight: tokens.lineHeightBase400, maxWidth: '72ch' },
+  letterDestaque: {
+    margin: 0,
+    padding: '12px 18px',
+    maxWidth: '72ch',
+    lineHeight: tokens.lineHeightBase500,
+    fontStyle: 'italic',
+    backgroundColor: tokens.colorBrandBackground2,
+    borderLeft: `4px solid ${tokens.colorBrandBackground}`,
+    borderRadius: tokens.borderRadiusMedium,
+  },
   signature: { display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '6px' },
   footer: {
     display: 'flex',
@@ -220,7 +230,7 @@ export default function Agradecimentos() {
       <header className={s.hero}>
         <div className={s.heroMark} aria-hidden="true"><Heart24Regular style={{ fontSize: '44px' }} /></div>
         <div className={s.heroBody}>
-          <Text size={200} className={s.heroKicker}>Projeto final · Recode · Desenvolvimento de Sistemas III</Text>
+          <Text size={200} className={s.heroKicker}>Projeto final · Recode · Desenvolvimento de Sistemas</Text>
           <Title1 as="h1" style={{ color: '#fff' }}>Agradecimentos</Title1>
           <Body1 className={s.heroLead}>
             O resumo do que foi construído, das tecnologias que tornaram isso possível e de quem caminhou junto
@@ -347,6 +357,13 @@ export default function Agradecimentos() {
         {AGRADECIMENTO.paragrafos.map(p => (
           <Body1 key={p} className={s.letterText}>{p}</Body1>
         ))}
+        <blockquote className={s.letterDestaque}>
+          <Text size={400}>
+            Semear ganha um significado ainda mais bonito: mesmo quando a visão física falha ou fica embaçada, a minha
+            visão de futuro e o meu propósito continuam nítidos, plantando sementes de transformação que nenhuma barreira
+            visual pode conter.
+          </Text>
+        </blockquote>
         <div className={s.signature}>
           {AUTOR && <Text size={400} className={s.strong}>{AUTOR}</Text>}
           <Text size={200} className={s.muted}>Projeto Final · Turma 2 · Recode</Text>

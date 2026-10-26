@@ -17,6 +17,8 @@ import { calcularKpis } from '../utils/agregarEscolas';
 
 // A planilha fica em public/downloads (o Vite a serve na raiz do site)
 const PLANILHA_URL = `${import.meta.env.BASE_URL}downloads/PlanilhaRecode_Painel.xlsx`;
+// O logotipo fica em public/logo-marca.png (o Vite o serve na raiz do site)
+const LOGO_URL = `${import.meta.env.BASE_URL}logo-marca.png`;
 
 /**
  * Página de apresentação do sistema (rota /, a primeira do menu).
@@ -136,18 +138,17 @@ const useStyles = makeStyles({
       pointerEvents: 'none',
     },
   },
+  // Logotipo: o PNG já traz o fundo escuro com cantos arredondados, então só dimensionamos e damos sombra
   heroMark: {
-    width: '88px',
-    height: '88px',
+    width: '120px',
+    height: '120px',
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: tokens.borderRadiusXLarge,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    color: '#fff',
-    boxShadow: tokens.shadow8,
+    overflow: 'hidden',
+    borderRadius: '22%',
+    boxShadow: tokens.shadow16,
+    zIndex: 1,
   },
+  heroLogo: { display: 'block', width: '100%', height: '100%', objectFit: 'contain' },
   heroBody: { display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, minWidth: '260px', zIndex: 1 },
   heroKicker: { color: 'rgba(255,255,255,0.85)' },
   heroLead: { color: 'rgba(255,255,255,0.92)', maxWidth: '62ch' },
@@ -284,14 +285,16 @@ export default function Apresentacao() {
     <div className={s.page}>
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <header className={s.hero}>
-        <div className={s.heroMark} aria-hidden="true"><Building24Regular style={{ fontSize: '44px' }} /></div>
+        <div className={s.heroMark}>
+          <img className={s.heroLogo} src={LOGO_URL} alt="Logotipo do Semear: marcador de mapa com capelo de formatura e uma estrela" width={120} height={120} />
+        </div>
         <div className={s.heroBody}>
-          <Text size={200} className={s.heroKicker}>Recode · Avaliação Escolas</Text>
+          <Text size={200} className={s.heroKicker}>Semear · Avaliação Escolas · Projeto Recode</Text>
           <Title1 as="h1" style={{ color: '#fff' }}>
             A qualidade das escolas e o caminho dos alunos até elas, em um só lugar.
           </Title1>
           <Body1 className={s.heroLead}>
-            O Avaliação Escolas junta cadastro, notas de qualidade, cursos e deslocamento dos alunos para que quem
+            O Semear junta cadastro, notas de qualidade, cursos e deslocamento dos alunos para que quem
             gerencia a educação saiba onde agir primeiro.
           </Body1>
           <div className={s.chips}>
