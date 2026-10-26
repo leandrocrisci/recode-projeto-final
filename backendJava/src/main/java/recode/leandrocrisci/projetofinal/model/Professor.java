@@ -39,10 +39,12 @@ public class Professor {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Escola escola;
 
+    // Hash BCrypt persistido. Nunca serializado na API.
     @JsonIgnore
     @Column(name = "senha_hash")
     private String senhaHash;
 
+    // Senha em texto só na entrada (criar/editar). WRITE_ONLY impede eco no JSON.
     @Transient
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Pattern(regexp = "^$|.{8,72}", message = "Senha deve ter de 8 a 72 caracteres")

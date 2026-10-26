@@ -6,6 +6,7 @@ export interface Sessao {
   email: string;
 }
 
+// sessionStorage: o token some ao fechar a aba. Não usar localStorage (fica após o browser fechar).
 const STORAGE_KEY = 'recode.sessao';
 let cache: Sessao | null = null;
 

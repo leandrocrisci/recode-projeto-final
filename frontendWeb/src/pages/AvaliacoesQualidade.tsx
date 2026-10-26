@@ -16,6 +16,7 @@ import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { Stars } from '../components/Stars';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -45,7 +46,7 @@ export default function AvaliacoesQualidade() {
     setLoading(true);
     Promise.all([getAvaliacoesQualidade(), getEscolas()])
       .then(([av, es]) => { setAvaliacoes(av.data); setEscolas(es.data); })
-      .catch(() => setError('Erro ao carregar dados.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar as avaliações e as escolas')))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -80,8 +81,8 @@ const handleSubmit = async (ev: React.FormEvent) => {
     }
     closeModal(); 
     load();
-  } catch { 
-    setError('Erro ao salvar avaliação.'); 
+  } catch (e) { 
+    setError(mensagemDeErro(e, 'salvar a avaliação')); 
   } finally { 
     setSaving(false); 
   }
@@ -95,8 +96,8 @@ const handleSubmit = async (ev: React.FormEvent) => {
     try {
       await deleteAvaliacaoQualidade(id);
       load();
-    } catch {
-      setError('Erro ao excluir avaliação. Tente novamente.');
+    } catch (e) {
+      setError(mensagemDeErro(e, 'excluir a avaliação'));
     }
   };
 
@@ -127,7 +128,7 @@ const handleSubmit = async (ev: React.FormEvent) => {
         title="Avaliações de Qualidade"
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>}
       />
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
           <DataGrid

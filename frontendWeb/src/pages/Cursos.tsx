@@ -15,6 +15,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -47,7 +48,7 @@ export default function Cursos() {
         setCursos(c.data || []); 
         setEscolas(e.data || []); 
       })
-      .catch(() => setError('Erro ao carregar dados dos programas de ensino.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar os cursos e as escolas')))
       .finally(() => setLoading(false));
   };
   
@@ -101,8 +102,8 @@ export default function Cursos() {
       }
       closeModal(); 
       load();
-    } catch { 
-      setError('Erro ao salvar as informações do curso.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'salvar o curso')); 
     } finally { 
       setSaving(false); 
     }
@@ -113,8 +114,8 @@ export default function Cursos() {
     try { 
       await deleteCurso(id); 
       load(); 
-    } catch { 
-      setError('Erro ao excluir curso.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'excluir o curso', 'Verifique se ele não tem alunos ou avaliações vinculados.')); 
     }
   };
 
@@ -169,7 +170,7 @@ export default function Cursos() {
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Curso</Button>}
       />
 
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {loading ? <Spinner label="Consultando grade acadêmica cadastrada..." /> : (
         <div className={s.tableWrap}>

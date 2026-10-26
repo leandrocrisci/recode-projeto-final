@@ -20,6 +20,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 // ── Estilos ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export default function Pedidos() {
         setPedidos(pd.data); setEscolas(es.data);
         setProdutos(pr.data); setProfessores(pf.data);
       })
-      .catch(() => setError('Erro ao carregar dados.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar os pedidos')))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -132,6 +133,13 @@ export default function Pedidos() {
     if (!escolaId || !produtoId || !professorId) {
       setError('Selecione escola, produto e professor.'); return;
     }
+    if (!Number.isInteger(Number(quantidade)) || Number(quantidade) < 1) {
+      setError('A quantidade deve ser um número inteiro, de 1 em diante.'); return;
+    }
+    if (!editId && produtoSelecionado && Number(quantidade) > produtoSelecionado.quantidade) {
+      setError(`Estoque insuficiente: "${produtoSelecionado.nome}" tem ${produtoSelecionado.quantidade} unidade(s) em estoque. Reduza a quantidade do pedido.`);
+      return;
+    }
     setError(''); setSaving(true);
     const payload = {
       quantidade: Number(quantidade),
@@ -145,7 +153,7 @@ export default function Pedidos() {
         await createPedido(Number(escolaId), Number(produtoId), Number(professorId), payload);
       }
       closeModal(); load();
-    } catch { setError('Erro ao salvar pedido.'); }
+    } catch (e) { setError(mensagemDeErro(e, 'salvar o pedido')); }
     finally { setSaving(false); }
   };
 
@@ -153,7 +161,7 @@ export default function Pedidos() {
     if (!(await confirmar('Cancelar/excluir este pedido?'))) return;
     setError('');
     try { await deletePedido(id); load(); }
-    catch { setError('Erro ao excluir pedido.'); }
+    catch (e) { setError(mensagemDeErro(e, 'excluir o pedido')); }
   };
 
   const set = (k: keyof typeof emptyForm) =>
@@ -240,7 +248,7 @@ export default function Pedidos() {
         actions={<Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Pedido</Button>}
       />
 
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {/* Filtros */}
       <div className={s.filterBar}>

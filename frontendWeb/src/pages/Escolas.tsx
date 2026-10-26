@@ -21,6 +21,7 @@ import { cmpTexto } from '../utils/tableSort';
 import { corTipoEscola } from '../utils/tipoEscola';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -71,7 +72,7 @@ export default function Escolas() {
         setEscolas(es.data || []); 
         setEnderecos(en.data || []); 
       })
-      .catch(() => setError('Erro ao sincronizar dados da matriz de escolas.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar as escolas e os endereços')))
       .finally(() => setLoading(false));
   };
   
@@ -136,8 +137,8 @@ export default function Escolas() {
       }
       setSavedId(id); 
       setPasso(2);
-    } catch { 
-      setError('Erro ao salvar as informações iniciais da escola.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'salvar os dados da escola')); 
     } finally { 
       setSaving(false); 
     }
@@ -156,8 +157,8 @@ export default function Escolas() {
       }
       closeModal(); 
       load();
-    } catch { 
-      setError('Erro ao salvar a localização espacial da instituição.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'salvar o endereço da escola')); 
     } finally { 
       setSaving(false); 
     }
@@ -168,8 +169,8 @@ export default function Escolas() {
     try { 
       await deleteEscola(id); 
       load(); 
-    } catch { 
-      setError('Não foi possível excluir a escola selecionada.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'excluir a escola', 'Verifique se ela não tem endereços, cursos, professores, alunos ou pedidos vinculados.')); 
     }
   };
 
@@ -233,7 +234,7 @@ export default function Escolas() {
         )}
       />
 
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {loading ? (
         <Spinner label="Consolidando base de dados cartográfica..." />

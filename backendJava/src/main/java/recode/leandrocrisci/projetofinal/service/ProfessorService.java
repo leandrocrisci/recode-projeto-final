@@ -69,6 +69,7 @@ public class ProfessorService {
         professorRepository.deleteById(id);
     }
 
+    /** Campo senha em branco na edição mantém o hash atual. */
     private void aplicarSenha(Professor professor, String senha) {
         if (senha != null && !senha.isBlank()) {
             professor.setSenhaHash(passwordEncoder.encode(senha));

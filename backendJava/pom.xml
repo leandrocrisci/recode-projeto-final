@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.3.5</version>
+		<version>3.5.16</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>recode.leandrocrisci</groupId>
@@ -15,7 +15,8 @@
 	<description>Projeto Final Recode - API REST com Spring Boot</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
+		<maven.compiler.release>${java.version}</maven.compiler.release>
 	</properties>
 
 	<dependencies>

@@ -14,6 +14,7 @@ public interface ProfessorRepository extends JpaRepository<Professor, Long> {
 
     List<Professor> findByEscolaId(Long escolaId);
 
+    /** Login: só professores com senha (administradores). */
     Optional<Professor> findFirstByEmailIgnoreCaseAndSenhaHashIsNotNull(String email);
 
     Optional<Professor> findFirstByEmailIgnoreCase(String email);

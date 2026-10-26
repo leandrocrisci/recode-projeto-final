@@ -5,6 +5,7 @@ import {
 } from '@fluentui/react-components';
 import {
   Home24Regular, Home24Filled,
+  Map24Regular, Map24Filled,
   Building24Regular, Building24Filled,
   BookOpen24Regular, BookOpen24Filled,
   People24Regular, People24Filled,
@@ -26,6 +27,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const HomeIcon      = bundleIcon(Home24Filled,              Home24Regular);
+const DashIcon      = bundleIcon(Map24Filled,               Map24Regular);
 const EscolaIcon    = bundleIcon(Building24Filled,          Building24Regular);
 const CursoIcon     = bundleIcon(BookOpen24Filled,          BookOpen24Regular);
 const AlunoIcon     = bundleIcon(People24Filled,            People24Regular);
@@ -166,7 +168,8 @@ export default function Sidebar() {
         <Button appearance="subtle" icon={<Dismiss24Regular />} aria-label="Fechar menu" onClick={() => setAberto(false)} />
       </div>
       <Text className={s.section}>Navegação</Text>
-      <NavItem to="/"            icon={HomeIcon}    label="Dashboard" />
+      <NavItem to="/"            icon={HomeIcon}    label="Apresentação" />
+      <NavItem to="/dashboard"   icon={DashIcon}    label="Dashboard" />
       <NavItem to="/ods4"        icon={Ods4Icon}    label="ODS 4" />
 
       <Text className={s.section}>Cadastros</Text>

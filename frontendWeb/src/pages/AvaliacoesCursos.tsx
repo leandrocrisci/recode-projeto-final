@@ -15,6 +15,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -43,7 +44,7 @@ export default function AvaliacoesCursos() {
     setLoading(true);
     Promise.all([getAvaliacoesCursos(), getCursos()])
       .then(([av, cu]) => { setAvaliacoes(av.data); setCursos(cu.data); })
-      .catch(() => setError('Erro ao carregar dados.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar as avaliações e os cursos')))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -78,8 +79,8 @@ export default function AvaliacoesCursos() {
       }
       closeModal(); 
       load();
-    } catch { 
-      setError('Erro ao salvar avaliação do curso.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'salvar a avaliação do curso')); 
     } finally { 
       setSaving(false); 
     }
@@ -91,8 +92,8 @@ export default function AvaliacoesCursos() {
     try {
       await deleteAvaliacaoCurso(id);
       load();
-    } catch {
-      setError('Erro ao excluir avaliação. Tente novamente.');
+    } catch (e) {
+      setError(mensagemDeErro(e, 'excluir a avaliação'));
     }
   };
 
@@ -129,7 +130,7 @@ export default function AvaliacoesCursos() {
         title="Avaliações de Cursos"
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Nova Avaliação</Button>}
       />
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
           <DataGrid items={avaliacoes} columns={columns} sortable resizableColumns>

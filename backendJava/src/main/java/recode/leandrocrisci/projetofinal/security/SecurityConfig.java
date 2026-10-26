@@ -13,6 +13,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Política HTTP da API: JWT no header (stateless).
+ * CSRF desligado de propósito — o token não vai em cookie, só em Authorization.
+ * Consultas GET permanecem públicas; POST/PUT/PATCH/DELETE exigem ADMIN.
+ */
 @Configuration
 public class SecurityConfig {
 

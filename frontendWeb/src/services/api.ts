@@ -61,6 +61,7 @@ const isWriteMethod = (method?: string) =>
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   (config as InternalAxiosRequestConfig & { _t: number })._t = Date.now();
 
+  // JWS no header; a API valida assinatura HS256 e exige ADMIN nas escritas.
   const sessao = lerSessao();
   if (sessao) {
     config.headers.Authorization = `Bearer ${sessao.token}`;

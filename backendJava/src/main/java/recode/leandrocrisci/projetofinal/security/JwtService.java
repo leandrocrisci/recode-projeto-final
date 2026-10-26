@@ -13,6 +13,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+/**
+ * Emite e valida tokens JWS (JWT assinado). Algoritmo: HMAC-SHA256 (HS256).
+ * A chave vem de JWT_SECRET / app.jwt.secret e não deve ser versionada.
+ */
 @Service
 public class JwtService {
 
@@ -23,6 +27,7 @@ public class JwtService {
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-minutes:120}") long expirationMinutes) {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        // HS256 exige chave com pelo menos 256 bits (32 bytes).
         if (keyBytes.length < 32) {
             throw new IllegalStateException("JWT_SECRET precisa ter pelo menos 32 bytes.");
         }
@@ -35,6 +40,7 @@ public class JwtService {
 
     public String gerarToken(Professor professor) {
         Instant now = Instant.now();
+        // Quem tem senha cadastrada recebe papel ADMIN; não há papéis intermediários.
         return Jwts.builder()
                 .subject(String.valueOf(professor.getId()))
                 .claim("email", professor.getEmail())
@@ -46,6 +52,7 @@ public class JwtService {
                 .compact();
     }
 
+    /** Rejeita token adulterado, com assinatura inválida ou expirado. */
     public Claims validar(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)

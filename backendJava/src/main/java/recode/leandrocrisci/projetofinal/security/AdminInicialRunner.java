@@ -10,6 +10,11 @@ import org.springframework.stereotype.Component;
 import recode.leandrocrisci.projetofinal.model.Professor;
 import recode.leandrocrisci.projetofinal.repository.ProfessorRepository;
 
+/**
+ * Na subida da API, se ADMIN_EMAIL e ADMIN_SENHA existirem, cria ou atualiza
+ * o primeiro professor administrador (hash BCrypt em senha_hash).
+ * Não sobrescreve quem já tem senha nesse e-mail.
+ */
 @Component
 public class AdminInicialRunner implements ApplicationRunner {
 

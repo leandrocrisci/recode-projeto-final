@@ -6,7 +6,7 @@ import {
 } from '@fluentui/react-components';
 import {
   Globe24Regular, People24Regular, DataTrending24Regular, BookOpen24Regular, PersonBoard24Regular,
-  DocumentBulletList24Regular, Location24Regular, ClipboardTaskAdd24Regular, Building24Regular,
+  DocumentBulletList24Regular, Location24Regular, ClipboardTaskAdd24Regular, Building24Regular, ArrowDownload24Regular,
 } from '@fluentui/react-icons';
 import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
@@ -19,6 +19,9 @@ import {
   metas, termos, linhaDoTempo, desafios, estrategias,
 } from '../data/ods4';
 import type { Meta } from '../data/ods4';
+
+// A planilha fica em public/downloads (o Vite a serve na raiz do site)
+const PLANILHA_URL = `${import.meta.env.BASE_URL}downloads/PlanilhaRecode_Painel.xlsx`;
 
 type TabId = 'visao' | 'global' | 'brasil' | 'metas' | 'caminhos';
 
@@ -240,6 +243,16 @@ export default function Ods4() {
             </Button>
             <Button appearance="outline" className={s.heroBtn} icon={<Location24Regular />} onClick={() => setTab('brasil')}>
               Dados do Brasil
+            </Button>
+            <Button
+              as="a"
+              href={PLANILHA_URL}
+              download="PlanilhaRecode_Painel.xlsx"
+              appearance="outline"
+              className={s.heroBtn}
+              icon={<ArrowDownload24Regular />}
+            >
+              Baixar planilha (Excel)
             </Button>
           </div>
         </div>
@@ -482,7 +495,7 @@ export default function Ods4() {
               reúne, conversam diretamente com as metas de acesso, equidade e infraestrutura (4.1, 4.5 e 4.a).
             </Body1>
             <div className={s.calloutActions}>
-              <Button appearance="primary" icon={<Location24Regular />} onClick={() => navigate('/')}>Ver o mapa de escolas</Button>
+              <Button appearance="primary" icon={<Location24Regular />} onClick={() => navigate('/dashboard')}>Ver o mapa de escolas</Button>
               <Button appearance="outline" icon={<DataTrending24Regular />} onClick={() => navigate('/progressos')}>Abrir o relatório gerencial</Button>
             </div>
           </div>

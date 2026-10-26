@@ -9,6 +9,10 @@ import recode.leandrocrisci.projetofinal.service.PedidoService;
 
 import java.util.List;
 
+/**
+ * Pedidos. Leituras GET são públicas; criar/editar/excluir exigem JWS de ADMIN
+ * (regra global em SecurityConfig, não repetida em cada método).
+ */
 @RestController
 @RequestMapping("/api/pedidos")
 public class PedidoController {

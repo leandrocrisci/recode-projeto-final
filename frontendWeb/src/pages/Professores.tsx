@@ -19,6 +19,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page:       { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -47,7 +48,7 @@ export default function Professores() {
     setLoading(true);
     Promise.all([getProfessores(), getEscolas()])
       .then(([p, e]) => { setProfessores(p.data); setEscolas(e.data); })
-      .catch(() => setError('Erro ao carregar professores.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar os professores e as escolas')))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -84,14 +85,14 @@ export default function Professores() {
         await createProfessor(Number(form.escolaId), payload);
       }
       closeModal(); load();
-    } catch { setError('Erro ao salvar professor.'); }
+    } catch (e) { setError(mensagemDeErro(e, 'salvar o professor')); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id: number) => {
     if (!(await confirmar('Excluir este professor?'))) return;
     try { await deleteProfessor(id); load(); }
-    catch { setError('Erro ao excluir professor.'); }
+    catch (e) { setError(mensagemDeErro(e, 'excluir o professor', 'Verifique se ele não tem pedidos vinculados.')); }
   };
 
   const set = (k: keyof typeof emptyForm) =>
@@ -126,7 +127,7 @@ export default function Professores() {
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Professor</Button>}
       />
 
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       {loading ? <Spinner label="Carregando professores..." /> : (
         <div className={s.tableWrap}>
@@ -178,8 +179,14 @@ export default function Professores() {
                 ? 'Deixe em branco para manter a senha atual. Mínimo de 8 caracteres.'
                 : 'Opcional. Professores com senha podem entrar. Mínimo de 8 caracteres.'}
             >
-              <Input type="password" autoComplete="new-password" minLength={8} maxLength={72}
-                value={form.senha} onChange={set('senha')} />
+              <Input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={72}
+                value={form.senha}
+                onChange={set('senha')}
+              />
             </Field>
             <Field label="Biografia" style={{ gridColumn: '1 / -1' }}>
               <Textarea rows={3} value={form.biografia}

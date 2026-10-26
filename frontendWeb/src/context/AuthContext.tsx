@@ -37,6 +37,7 @@ const AuthContext = createContext<AuthContextType>({
 
 const MAX_TIMEOUT_MS = 2_000_000_000;
 
+/** Sessão de professor: JWS no sessionStorage, logout no 401 e na expiração local. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(() => lerSessao());
   const [loginAberto, setLoginAberto] = useState(false);

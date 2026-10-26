@@ -19,6 +19,7 @@ function mensagemDeLogin(error: unknown): string {
   return 'Erro inesperado ao entrar.';
 }
 
+/** Modal de login. Credenciais vão para POST /api/auth/login e voltam como JWS. */
 export default function LoginDialog() {
   const styles = useFormStyles();
   const { loginAberto, motivoLogin, login, fecharLogin } = useAuth();

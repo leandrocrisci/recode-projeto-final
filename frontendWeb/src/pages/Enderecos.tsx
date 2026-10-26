@@ -15,6 +15,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpTexto } from '../utils/tableSort';
 import { useFormStyles, EnderecoFormFields } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -41,7 +42,7 @@ export default function Enderecos() {
     setLoading(true);
     Promise.all([getEnderecos(), getEscolas()])
       .then(([en, es]) => { setEnderecos(en.data); setEscolas(es.data); })
-      .catch(() => setError('Erro ao carregar dados.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar os endereços e as escolas')))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -61,7 +62,7 @@ export default function Enderecos() {
       if (editId) await updateEndereco(editId, payload);
       else await createEndereco(Number(escolaId), payload);
       closeModal(); load();
-    } catch { setError('Erro ao salvar endereço.'); }
+    } catch (e) { setError(mensagemDeErro(e, 'salvar o endereço')); }
     finally { setSaving(false); }
   };
 
@@ -79,7 +80,7 @@ export default function Enderecos() {
         <TableCellLayout>
           <div className={s.actionCell}>
             <Tooltip content="Editar" relationship="label"><Button icon={<Edit24Regular />} appearance="subtle" size="small" onClick={() => openEdit(i)} /></Tooltip>
-            <Tooltip content="Excluir" relationship="label"><Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (!(await confirmar('Deseja excluir este endereço?'))) return; await deleteEndereco(i.id); load(); }} /></Tooltip>
+            <Tooltip content="Excluir" relationship="label"><Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (!(await confirmar('Deseja excluir este endereço?'))) return; try { await deleteEndereco(i.id); load(); } catch (e) { setError(mensagemDeErro(e, 'excluir o endereço')); } }} /></Tooltip>
           </div>
         </TableCellLayout>
       ),
@@ -93,7 +94,7 @@ export default function Enderecos() {
         title="Endereços das Escolas"
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Endereço</Button>}
       />
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       {loading ? <Spinner label="Carregando..." /> : (
         <div className={s.tableWrap}>
           <DataGrid items={enderecos} columns={columns} sortable resizableColumns>

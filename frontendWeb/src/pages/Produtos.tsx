@@ -19,6 +19,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   caderno: DocumentText24Regular, caneta: Pen24Regular, apagador: Eraser24Regular,
@@ -55,17 +56,19 @@ export default function Produtos() {
   
   const load = () => {
     setLoading(true);
-    Promise.all([getProdutos(), getEscolas(), getProfessores()]).then(([p, e, pf]) => { setProdutos(p.data); setEscolas(e.data); setProfessores(pf.data); }).catch(() => setError('Erro ao carregar dados.')).finally(() => setLoading(false));
+    Promise.all([getProdutos(), getEscolas(), getProfessores()]).then(([p, e, pf]) => { setProdutos(p.data); setEscolas(e.data); setProfessores(pf.data); }).catch((e) => setError(mensagemDeErro(e, 'carregar o catálogo de produtos'))).finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
   const handleSolicitar = async (ev: React.FormEvent) => {
     ev.preventDefault(); if (!pForm.escolaId || !pForm.professorId) return setError('Selecione escola e professor.');
-    setPSaving(true);
+    if (!Number.isInteger(Number(pForm.quantidade)) || Number(pForm.quantidade) < 1) return setError('A quantidade deve ser um número inteiro, de 1 em diante.');
+    if (Number(pForm.quantidade) > pProd!.quantidade) return setError(`Estoque insuficiente: "${pProd!.nome}" tem ${pProd!.quantidade} unidade(s) em estoque. Reduza a quantidade do pedido.`);
+    setError(''); setPSaving(true);
     try {
       await createPedido(Number(pForm.escolaId), pProd!.id, Number(pForm.professorId), { quantidade: Number(pForm.quantidade), valorUnitario: pProd!.preco, statusPedido: 'processando' });
       setPSuccess(true); setTimeout(() => { setPModal(false); setPSuccess(false); }, 1500);
-    } catch { setError('Erro no pedido.'); } finally { setPSaving(false); }
+    } catch (e) { setError(mensagemDeErro(e, 'enviar o pedido')); } finally { setPSaving(false); }
   };
 
   // FUNÇÃO REATIVADA: Salva ou Atualiza itens de estoque manualmente
@@ -76,7 +79,7 @@ export default function Produtos() {
       if (editId) await updateProduto(editId, payload); 
       else await createProduto(payload); 
       setModal(false); load(); 
-    } catch { setError('Erro ao salvar produto.'); } finally { setSaving(false); }
+    } catch (e) { setError(mensagemDeErro(e, 'salvar o produto')); } finally { setSaving(false); }
   };
     const handleImportSheet = async (ev: React.FormEvent) => {
     ev.preventDefault(); setError(''); setImpSuccess('');
@@ -137,8 +140,8 @@ export default function Produtos() {
     createTableColumn<Produto>({ columnId: 'qtd', compare: (a, b) => cmpNumero(a.quantidade, b.quantidade), renderHeaderCell: () => 'Estoque', renderCell: i => <TableCellLayout><Badge appearance="filled" color={i.quantidade > 0 ? 'success' : 'danger'}>{i.quantidade} un.</Badge></TableCellLayout> }),
     createTableColumn<Produto>({ columnId: 'acoes', renderHeaderCell: () => 'Ações', renderCell: i => isAdmin && (
       <TableCellLayout><div style={{ display: 'flex', gap: '6px' }}>
-        <Button icon={<Edit24Regular />} appearance="subtle" size="small" onClick={() => { setForm({ nome: i.nome, descricao: i.descricao ?? '', preco: String(i.preco), quantidade: String(i.quantidade), icone: i.icone ?? '' }); setEditId(i.id); setModal(true); }} />
-        <Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (await confirmar('Deseja excluir este produto?')) { await deleteProduto(i.id); load(); } }} />
+        <Button icon={<Edit24Regular />} appearance="subtle" size="small" onClick={() => { setForm({ nome: i.nome, descricao: i.descricao ?? '', preco: String(i.preco), quantidade: String(i.quantidade), icone: i.icone ?? '' }); setEditId(i.id); setError(''); setModal(true); }} />
+        <Button icon={<Delete24Regular />} appearance="subtle" size="small" onClick={async () => { if (await confirmar('Deseja excluir este produto?')) { try { await deleteProduto(i.id); load(); } catch (e) { setError(mensagemDeErro(e, 'excluir o produto', 'Verifique se ele não tem pedidos vinculados.')); } } }} />
       </div></TableCellLayout>
     ) }),
   ];
@@ -154,12 +157,12 @@ export default function Produtos() {
             <Button icon={<Grid24Regular />} appearance={view === 'vitrine' ? 'primary' : 'outline'} onClick={() => setView('vitrine')} />
             <Button icon={<Table24Regular />} appearance={view === 'estoque' ? 'primary' : 'outline'} onClick={() => setView('estoque')} />
             {/* <Button icon={<ArrowUpload24Regular />} onClick={() => { setError(''); setImpSuccess(''); setSheetUrl(''); setImpModal(true); }}>Importar da Planilha</Button> */}
-            <Button appearance="primary" icon={<Add24Regular />} onClick={() => { setForm(emptyForm); setEditId(null); setModal(true); }}>Novo</Button>
+            <Button appearance="primary" icon={<Add24Regular />} onClick={() => { setForm(emptyForm); setEditId(null); setError(''); setModal(true); }}>Novo</Button>
           </>
         )}
       />
 
-      {error && !impModal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !impModal && !pModal && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
 
       <div className={s.filterBar}>
         <Input contentBefore={<Search24Regular />} placeholder="Pesquisar..." value={busca} onChange={e => setBusca(e.target.value)} />
@@ -196,6 +199,7 @@ export default function Produtos() {
 
       {/* Modal: Novo / Editar */}
       <AppDialog open={modal} title={editId ? 'Editar Produto' : 'Novo Produto'} onClose={() => setModal(false)}>
+        {error && <MessageBar intent="error" style={{ marginBottom: '12px' }}><MessageBarBody>{error}</MessageBarBody></MessageBar>}
         <form onSubmit={handleSubmit} className={fs.formGrid}>
           <Field label="Nome *"><Input required value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} /></Field>
           <Field label="Preço *"><Input required type="number" step="0.01" value={form.preco} onChange={e => setForm({ ...form, preco: e.target.value })} /></Field>
@@ -213,6 +217,7 @@ export default function Produtos() {
 
       {/* Modal: Solicitar */}
       <AppDialog open={pModal} title={`Solicitar: ${pProd?.nome}`} onClose={() => setPModal(false)}>
+        {error && !pSuccess && <MessageBar intent="error" style={{ marginBottom: '12px' }}><MessageBarBody>{error}</MessageBarBody></MessageBar>}
         {pSuccess ? <Text size={400}>✅ Pedido enviado com sucesso!</Text> : (
           <form onSubmit={handleSolicitar} className={fs.formGrid}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', gridColumn: '1/-1' }}>{renderIcon(pProd?.icone, { fontSize: '32px' })}<Text>{pProd?.nome} ({fmtPreco(pProd?.preco ?? 0)})</Text></div>

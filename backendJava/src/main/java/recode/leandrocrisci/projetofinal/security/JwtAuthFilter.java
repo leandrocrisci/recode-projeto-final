@@ -15,6 +15,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Lê o header {@code Authorization: Bearer} + JWS, valida a assinatura e
+ * coloca ROLE_ADMIN no contexto do Spring Security. Sem header, a requisição
+ * segue anônima (GETs públicos; escritas caem em 401).
+ */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -42,6 +47,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.clearContext();
                 }
             } catch (JwtException | IllegalArgumentException e) {
+                // Token inválido ou expirado: não autentica e deixa a cadeia decidir (401 nas escritas).
                 SecurityContextHolder.clearContext();
             }
         }

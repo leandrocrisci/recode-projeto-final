@@ -19,6 +19,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { cmpNumero, cmpTexto } from '../utils/tableSort';
 import { useFormStyles } from '../components/FormUtils';
 import { useAuth } from '../context/AuthContext';
+import { mensagemDeErro } from '../utils/erroApi';
 
 const useStyles = makeStyles({
   page: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -59,7 +60,7 @@ export default function Alunos() {
         setEscolas(e.data || []); 
         setCursos(c.data || []); 
       })
-      .catch(() => setError('Erro ao carregar dados dos alunos.'))
+      .catch((e) => setError(mensagemDeErro(e, 'carregar os alunos, as escolas e os cursos')))
       .finally(() => setLoading(false));
   };
   
@@ -116,8 +117,8 @@ export default function Alunos() {
       }
       closeModal();
       load();
-    } catch { 
-      setError('Erro ao salvar os indicadores do aluno.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'salvar o perfil do aluno')); 
     } finally { 
       setSaving(false); 
     }
@@ -128,8 +129,8 @@ export default function Alunos() {
     try { 
       await deleteAluno(id); 
       load(); 
-    } catch { 
-      setError('Erro ao excluir aluno.'); 
+    } catch (e) { 
+      setError(mensagemDeErro(e, 'excluir o aluno')); 
     }
   };
 
@@ -209,7 +210,7 @@ export default function Alunos() {
         actions={isAdmin && <Button appearance="primary" icon={<Add24Regular />} onClick={openNew}>Novo Aluno</Button>}
       />
 
-      {error && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
+      {error && !modal && <MessageBar intent="error"><MessageBarBody>{error}</MessageBarBody></MessageBar>}
       
       {loading ? <Spinner label="Carregando indicadores espaciais..." /> : (
         <div className={s.tableWrap}>

@@ -16,6 +16,7 @@ public class ProjetofinalApplication {
 		SpringApplication.run(ProjetofinalApplication.class, args);
 	}
 
+	/** Origens do frontend (local e Render). Lista em CORS_ALLOWED_ORIGINS. */
 	@Bean
 	public WebMvcConfigurer corsConfigurer(
 			@Value("${app.cors.allowed-origins:http://localhost:5174,https://frontendweb-rcs5.onrender.com}") String allowedOrigins) {

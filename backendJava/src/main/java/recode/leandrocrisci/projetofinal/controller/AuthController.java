@@ -16,6 +16,10 @@ import recode.leandrocrisci.projetofinal.security.JwtService;
 
 import java.util.Map;
 
+/**
+ * Login público: e-mail + senha do professor. Resposta contém o JWS (Bearer).
+ * Mensagem de falha é genérica para não revelar se o e-mail existe.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
