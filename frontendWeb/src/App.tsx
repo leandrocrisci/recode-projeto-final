@@ -26,7 +26,10 @@ import Professores  from './pages/Professores';
 import Pedidos      from './pages/Pedidos';
 import Progressos   from './pages/RelatorioDashboard';
 import N8N          from './pages/N8N';
-import GerenciamentoEventos from './components/DevLogger'; // Importação direta segura da nova página
+import GerenciamentoEventos from './components/DevLogger'; 
+// Adicione este import no topo do seu App.tsx:
+import LoginDialog from './components/LoginDialog'; 
+// Importação direta segura da nova página
 
 const useStyles = makeStyles({
   shell: {
@@ -62,6 +65,7 @@ function AppShell() {
   const s = useStyles();
   return (
     <div className={s.shell}>
+      <LoginDialog /> 
       <Navbar />
       <div className={s.body}>
         <Sidebar />
