@@ -17,6 +17,7 @@ import { calcularKpis } from '../utils/agregarEscolas';
 
 // A planilha fica em public/downloads (o Vite a serve na raiz do site)
 const PLANILHA_URL = `${import.meta.env.BASE_URL}downloads/PlanilhaRecode_Painel.xlsx`;
+const CRONOGRAMA_URL = `${import.meta.env.BASE_URL}downloads/Semear_Cronograma_Scrum_Gantt.xlsx`;
 // O logotipo fica em public/logo-marca.png (o Vite o serve na raiz do site)
 const LOGO_URL = `${import.meta.env.BASE_URL}logo-marca.png`;
 
@@ -345,7 +346,7 @@ export default function Apresentacao() {
             </Button>
                        <Button
               as="a"
-              href={PLANILHA_URL}
+              href={CRONOGRAMA_URL}
               download="Semear_Cronograma_Scrum_Gantt.xlsx"
               appearance="outline"
               className={s.heroBtn}
