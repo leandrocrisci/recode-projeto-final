@@ -15,8 +15,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { NAVBAR_HEIGHT, alternarMenu, useMenuLateral } from '../hooks/useMenuLateral';
 
-// O logotipo fica em public/logo-marca.png (o Vite o serve na raiz do site)
-const LOGO_URL = `${import.meta.env.BASE_URL}logo-marca.png`;
+// Logotipo pequeno (public/logo-semear-pequeno.png): o Vite o serve na raiz do site
+const LOGO_URL = `${import.meta.env.BASE_URL}logo-semear-pequeno.png`;
 
 const useStyles = makeStyles({
   header: {
@@ -114,9 +114,9 @@ export default function Navbar() {
           aria-expanded={aberto}
           aria-controls="menu-lateral"
         />
-        <Link to="/" className={s.brand} aria-label="Semear — Avaliação Escolas, ir para a página inicial">
+        <Link to="/" className={s.brand} aria-label="Semear — Avaliação Escolar, ir para a página inicial">
           <img className={s.logo} src={LOGO_URL} alt="" width={36} height={36} />
-          <Text className={mergeClasses(s.title, s.tituloCompleto)}>Semear — Avaliação Escolas</Text>
+          <Text className={mergeClasses(s.title, s.tituloCompleto)}>Semear — Avaliação Escolar</Text>
           <Text className={mergeClasses(s.title, s.tituloCurto)}>Semear</Text>
         </Link>
       </div>

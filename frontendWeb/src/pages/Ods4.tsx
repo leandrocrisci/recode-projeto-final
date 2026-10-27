@@ -489,9 +489,9 @@ export default function Ods4() {
           </div>
 
           <div className={s.callout}>
-            <Text size={400} className={s.cardTitle}>E o Recode com isso?</Text>
+            <Text size={400} className={s.cardTitle}>E o Semear com isso?</Text>
             <Body1>
-              Distância até a escola, zona rural, transporte escolar e notas de qualidade, os indicadores que o Recode
+              Distância até a escola, zona rural, transporte escolar e notas de qualidade, os indicadores que o Semear
               reúne, conversam diretamente com as metas de acesso, equidade e infraestrutura (4.1, 4.5 e 4.a).
             </Body1>
             <div className={s.calloutActions}>

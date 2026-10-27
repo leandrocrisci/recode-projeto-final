@@ -149,6 +149,25 @@ const useStyles = makeStyles({
   heroLogo: { display: 'block', width: '100%', height: '100%', objectFit: 'contain' },
   heroBody: { display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, minWidth: '260px', zIndex: 1 },
   heroKicker: { color: 'rgba(255,255,255,0.85)' },
+  // Nome do projeto em destaque no topo da página inicial
+  heroNome: {
+    margin: 0,
+    fontSize: 'clamp(46px, 8vw, 76px)',
+    fontWeight: 800,
+    lineHeight: 1,
+    letterSpacing: '-1px',
+    color: '#fff',
+    textShadow: '0 2px 14px rgba(0,0,0,0.25)',
+    '::after': {
+      content: '""',
+      display: 'block',
+      width: '84px',
+      height: '6px',
+      marginTop: '12px',
+      borderRadius: '3px',
+      backgroundColor: '#FACC15',
+    },
+  },
   heroLead: { color: 'rgba(255,255,255,0.92)', maxWidth: '62ch' },
   chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
   chip: {
@@ -239,7 +258,8 @@ export default function Home() {
           <img className={s.heroLogo} src={LOGO_URL} alt="Logotipo do Semear: marcador de mapa com capelo de formatura e uma estrela" width={120} height={120} />
         </div>
         <div className={s.heroBody}>
-          <Text size={200} className={s.heroKicker}>Semear · Avaliação Escolas · Projeto Recode</Text>
+          <p className={s.heroNome}>Semear</p>
+          <Text size={300} className={s.heroKicker}>Avaliação Escolar · Projeto final Recode</Text>
           <Title1 as="h1" style={{ color: '#fff' }}>
             A qualidade das escolas e o caminho dos alunos até elas, em um só lugar.
           </Title1>

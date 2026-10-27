@@ -266,7 +266,7 @@ export default function Agradecimentos() {
       <section className={s.section}>
         <SectionHead title="O sistema em resumo" />
         <Body1>
-          O <strong>{resumoSistema.nome}</strong> (no menu, <em>Recode — Avaliação Escolas</em>): {resumoSistema.descricao}
+          O <strong>{resumoSistema.nome}</strong> (no menu, <em>Semear — Avaliação Escolar</em>): {resumoSistema.descricao}
         </Body1>
         <div className={s.grid3}>
           {recursos.map(r => (
