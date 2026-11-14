@@ -13,6 +13,10 @@ build/
 out/
 *.class
 
+# Local-only WinUI projects
+/FrontWinUI3/
+/FrontWinUI3.Tests/
+
 # Environment variables and local secrets
 .env
 .env.*
